@@ -1,0 +1,113 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "extract test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_archive.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/extracted"
+            ]
+        },
+        {
+            "name": "proc_xml test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_procedure_xml.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/procedure.xml"
+            ]
+        },
+        {
+            "name": "charset test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_charset.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/extracted",
+                "output"
+            ]
+        },
+        {
+            "name": "image test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_image.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/extracted",
+                "output"
+            ]
+        },
+        {
+            "name": "ocr test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_ocr.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/extracted",
+                "output/ocr.json"
+            ]
+        },
+        {
+            "name": "merge test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_merge.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output",
+                "output/document.xml"
+            ]
+        },
+        {
+            "name": "metadata test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_metadata.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/metadata.json"
+            ]
+        },
+        {
+            "name": "translate test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_translate.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output/document.xml",
+                "output"
+            ]
+        },
+        {
+            "name": "parse test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_parse.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output"
+            ]
+        },
+        {
+            "name": "parse batch",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tests/test_parse_batch.py",
+            "console": "integratedTerminal",
+            "args": [
+                "output"
+            ]
+        }
+    ]
+}
