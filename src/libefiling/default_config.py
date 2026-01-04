@@ -1,8 +1,5 @@
 from .image.params import ImageConvertParam
 
-SCHEMA_VER = "1.0"
-
-
 defaultImageParams: list[ImageConvertParam] = [
     {
         "width": 300,

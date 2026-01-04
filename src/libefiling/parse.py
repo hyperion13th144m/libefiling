@@ -1,8 +1,10 @@
+import hashlib
 import shutil
 from datetime import datetime
 from itertools import chain
 from pathlib import Path
 
+from libefiling.archive.utils import detect_document_id
 from libefiling.image.results import ImageConvertResult
 from libefiling.manifest.model import (
     ArchiveSource,
@@ -18,7 +20,6 @@ from libefiling.manifest.model import (
     Stats,
     XmlFile,
 )
-from libefiling.utils.archive import detect_document_id
 
 from .archive.extract import extract_archive
 from .charset.convert import convert_xml_charset
@@ -26,6 +27,23 @@ from .default_config import defaultImageParams
 from .image.convert import convert_image
 from .image.params import ImageConvertParam
 from .ocr.ocr import guess_language_by_filename, ocr_image
+
+
+def generate_sha256(file_path: str) -> str:
+    """generate sha256 checksum of a file.
+
+    Args:
+        file_path (str): path to the file.
+
+    Returns:
+        str: sha256 checksum as a hex string.
+    """
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        # Read and update hash string value in blocks of 4K
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
 
 
 def parse_archive(
@@ -70,25 +88,26 @@ def parse_archive(
         convert_xml_charset(str(output_path), str(xml_dir / filename))
 
         ### record xml file info
+        xml_path = xml_dir / filename
         xml_files.append(
             XmlFile(
-                path=str(xml_dir.relative_to(output_root) / filename),
-                original_path_in_archive=filename,
-                sha256="TODO",
+                path=str(xml_path.relative_to(output_root)),
+                original_path=str(output_path.relative_to(output_root)),
+                sha256=generate_sha256(str(xml_path)),
                 encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
             )
         )
 
     ### convert charset of procedure xml to UTF-8 and save to temp_xml_dir
-    shutil.copy(src_procedure_path, f"{raw_dir}/{Path(src_procedure_path).name}")
-    convert_xml_charset(src_procedure_path, f"{xml_dir}/procedure.xml")
+    orig_xml_path = f"{raw_dir}/{Path(src_procedure_path).name}"
+    shutil.copy(src_procedure_path, orig_xml_path)
+    xml_path = Path(f"{xml_dir}/procedure.xml")
+    convert_xml_charset(src_procedure_path, xml_path)
     xml_files.append(
         XmlFile(
-            path=str(xml_dir.relative_to(output_root) / "procedure.xml"),
-            original_path=str(
-                raw_dir.relative_to(output_root) / Path(src_procedure_path).name
-            ),
-            sha256="TODO",
+            path=str(xml_path.relative_to(output_root)),
+            original_path=str(Path(orig_xml_path).relative_to(output_root)),
+            sha256=generate_sha256(str(xml_path)),
             encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
         )
     )
@@ -113,7 +132,7 @@ def parse_archive(
         derived_images = [
             DerivedImage(
                 path=str(images_dir.relative_to(output_root) / result["new"]),
-                sha256="TODO",
+                sha256=generate_sha256(str(images_dir / result["new"])),
                 width=int(result["width"]),
                 height=int(result["height"]),
                 size_tag=result.get("sizeTag", "unknown"),
@@ -132,24 +151,25 @@ def parse_archive(
                 id=Path(image).stem,
                 original=OriginalImage(
                     path=str(raw_dir.relative_to(output_root) / image.name),
-                    sha256="TODO",
+                    sha256=generate_sha256(str(raw_dir / image.name)),
                 ),
                 derived=derived_images,
                 ocr=OcrInfo(
                     path=str(ocr_path.relative_to(output_root)),
-                    sha256="TODO",
+                    sha256=generate_sha256(str(ocr_path)),
                     lang=lang,
                 ),
             )
         )
 
     ### save conversion results as XML
-    ic_result.save_as_xml(f"{xml_dir}/image_conversion_results.xml")
+    xml_path = Path(f"{xml_dir}/image_conversion_results.xml")
+    ic_result.save_as_xml(str(xml_path))
     xml_files.append(
         XmlFile(
-            path=str(xml_dir.relative_to(output_root) / "image_conversion_results.xml"),
+            path=str(xml_path.relative_to(output_root)),
             original_path="",
-            sha256="TODO",
+            sha256=generate_sha256(str(xml_path)),
             encoding=EncodingInfo(detected="unknown", normalized_to="UTF-8"),
         )
     )
@@ -164,12 +184,12 @@ def parse_archive(
             doc_id=detect_document_id(str(Path(src_archive_path))),
             source=ArchiveSource(
                 archive_filename=Path(src_archive_path).name,
-                archive_sha256="TODO",
+                archive_sha256=generate_sha256(str(src_archive_path)),
                 byte_size=Path(src_archive_path).stat().st_size,
             ),
             procedure_source=ProcedureSource(
                 procedure_filename=Path(src_procedure_path).name,
-                procedure_sha256="TODO",
+                procedure_sha256=generate_sha256(str(src_procedure_path)),
                 byte_size=Path(src_procedure_path).stat().st_size,
             ),
         ),

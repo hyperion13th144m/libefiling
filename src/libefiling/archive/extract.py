@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List, Tuple
 
-from ..utils.archive import detect_document_extension, detect_document_kind
 from .aaa import (
     ArchiveHandlerAAAJPC,
     ArchiveHandlerAAAJPD,
@@ -11,6 +10,7 @@ from .aaa import (
 from .check import check_archive_name
 from .handler import ArchiveHandler
 from .nnf import ArchiveHandlerNNFJPC, ArchiveHandlerNNFJWS, ArchiveHandlerNNFJWX
+from .utils import detect_document_extension, detect_document_kind
 
 
 def extract_archive(archive_path: str) -> List[Tuple[str, bytes]]:
