@@ -1,7 +1,7 @@
 #!/bin/sh
 
 poetry version patch
-poetry build -f wheel
+poetry build
 poetry publish --repository pypi
 
 

@@ -6,7 +6,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "poetry build -f wheel",
+            "command": "poetry build",
         },
         {
             "label": "publish test",

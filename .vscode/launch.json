@@ -15,16 +15,6 @@
             ]
         },
         {
-            "name": "proc_xml test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tests/test_procedure_xml.py",
-            "console": "integratedTerminal",
-            "args": [
-                "output/procedure.xml"
-            ]
-        },
-        {
             "name": "charset test",
             "type": "debugpy",
             "request": "launch",
@@ -58,38 +48,6 @@
             ]
         },
         {
-            "name": "merge test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tests/test_merge.py",
-            "console": "integratedTerminal",
-            "args": [
-                "output",
-                "output/document.xml"
-            ]
-        },
-        {
-            "name": "metadata test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tests/test_metadata.py",
-            "console": "integratedTerminal",
-            "args": [
-                "output/metadata.json"
-            ]
-        },
-        {
-            "name": "translate test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tests/test_translate.py",
-            "console": "integratedTerminal",
-            "args": [
-                "output/document.xml",
-                "output"
-            ]
-        },
-        {
             "name": "parse test",
             "type": "debugpy",
             "request": "launch",
@@ -99,15 +57,5 @@
                 "output"
             ]
         },
-        {
-            "name": "parse batch",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "tests/test_parse_batch.py",
-            "console": "integratedTerminal",
-            "args": [
-                "output"
-            ]
-        }
     ]
 }
