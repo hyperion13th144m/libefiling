@@ -1,6 +1,7 @@
 import hashlib
 import shutil
 from datetime import datetime
+from importlib.metadata import version as get_version
 from itertools import chain
 from pathlib import Path
 
@@ -68,14 +69,15 @@ def parse_archive(
     xml_dir = output_root / "xml"
     images_dir = output_root / "images"
     ocr_dir = output_root / "ocr"
-    for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
-        d.mkdir(parents=True, exist_ok=True)
 
     ### extract archive to raw_dir
     ### convert charset of extracted XML files to UTF-8 and save to xml_dir
     xml_files = []
     extracted_archives = extract_archive(src_archive_path)
     for filename, data in extracted_archives:
+        ### create output subdirectories after extract_archive
+        for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
+            d.mkdir(parents=True, exist_ok=True)
 
         ### save extracted file to raw_dir
         output_path = raw_dir / filename
@@ -142,7 +144,7 @@ def parse_archive(
             for result in results.results
         ]
 
-        ### perform OCR on image and save results as JSON
+        ### perform OCR on image and save results as text
         ocr_text = ocr_image(image, lang=lang)
         ocr_path = ocr_dir / (Path(image).stem + ".txt")
         with open(ocr_path, "w", encoding="utf-8") as f:
@@ -180,7 +182,7 @@ def parse_archive(
     manifest = Manifest(
         generator=GeneratorInfo(
             name="libefiling",
-            version="0.1.0",
+            version=get_version("libefiling"),
             created_at=datetime.now(),
         ),
         document=DocumentInfo(
