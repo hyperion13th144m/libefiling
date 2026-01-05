@@ -152,8 +152,9 @@
 - First Part のサイズ: ヘッダの First Part Size（4bytes (unsigned?) integer)
 - Second Part のサイズ: ヘッダの Second Part Size（4bytes (unsigned?) integer)
 
-magic number, First part, Second part は、拡張子毎にことなる
-magic number は外れてるかもしれん
+magic number, First part, Second part は、出願系・発送系・拡張子により異なる。
+
+magic number は、出願系・発送系・拡張子に応じた値だとおもうが、確信はない。
 
 #### 4.1.2 AAA.JWX
 - magic number: 49-31-32-30-31-30
