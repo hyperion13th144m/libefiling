@@ -5,6 +5,7 @@ from itertools import chain
 from pathlib import Path
 
 from libefiling.archive.utils import detect_document_id
+from libefiling.image.mediatype import get_media_type
 from libefiling.image.results import ImageConvertResult
 from libefiling.manifest.model import (
     ArchiveSource,
@@ -136,6 +137,7 @@ def parse_archive(
                 width=int(result["width"]),
                 height=int(result["height"]),
                 size_tag=result.get("sizeTag", "unknown"),
+                media_type=get_media_type(result["format"] or ""),
             )
             for result in results.results
         ]
@@ -152,6 +154,7 @@ def parse_archive(
                 original=OriginalImage(
                     path=str(raw_dir.relative_to(output_root) / image.name),
                     sha256=generate_sha256(str(raw_dir / image.name)),
+                    media_type=get_media_type(image.suffix),
                 ),
                 derived=derived_images,
                 ocr=OcrInfo(
