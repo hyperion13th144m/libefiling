@@ -139,7 +139,7 @@ def parse_archive(
                 width=int(result["width"]),
                 height=int(result["height"]),
                 size_tag=result.get("sizeTag", "unknown"),
-                media_type=get_media_type(result["format"] or ""),
+                media_type=get_media_type(Path(result["new"]).suffix or ""),
             )
             for result in results.results
         ]
