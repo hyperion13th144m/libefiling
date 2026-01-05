@@ -1,5 +1,8 @@
 # libefiling
 
+This library targets electronic filing data provided by the Japan Patent Office (JPO).
+Detailed documentation is written in Japanese, as the primary users are Japanese.
+
 ## 概要
  libefiling は インターネット出願ソフトのアーカイブを扱う python パッケージです。
  - [インターネット出願ソフト](https://www.pcinfo.jpo.go.jp/site/): 日本国特許庁に特許など出願する際に使うアプリ
