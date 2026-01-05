@@ -101,37 +101,37 @@
 </tr>
 
 <tr>
- <th>0001</th>
+ <th>0010</th>
  <td colspan="2" style="background-color: gray"></td>
  <td colspan="4" style="color: white; background-color: blue">Second part size</td>
  <td colspan="10" style="background-color: gray"></td>
 </tr>
 
 <tr>
-    <th>0002</th>
+    <th>0020</th>
     <td colspan="16" style="background-color: gray"></td>
 </tr>
 
 <tr>
-    <th>0003</th>
+    <th>0030</th>
     <td colspan="2" style="background-color: gray"></td>
     <td colspan="14" style="background-color: #AA0000">First Part</td>
 </tr>
 <tr>
-    <th>0004</th>
+    <th>0040</th>
     <td colspan="16" style="background-color: #AA0000"></td>
 </tr>
 <tr>
-    <th>0005</th>
+    <th>0050</th>
     <td colspan="8" style="background-color: #AA0000"></td>
     <td colspan="8" style="background-color: #0000AA">Second Part</td>
 </tr>
 <tr>
-    <th>0006</th>
+    <th>0060</th>
     <td colspan="16" style="background-color: #0000AA"></td>
 </tr>
 <tr>
-    <th>0007</th>
+    <th>0070</th>
     <td colspan="16" style="background-color: #0000AA"></td>
 </tr>
 
@@ -217,36 +217,36 @@ AAA.JPDは 「1．1．2 ファイル構成 (1)のアーカイブ」に似てい�
 </tr>
  
 <tr>
- <th>0001</th>
+ <th>0010</th>
  <td colspan="2" style="color: white; background-color: red"> part size</td>
  <td colspan="4" style="color: white; background-color: blue">Second part size</td>
  <td colspan="10" style="background-color: gray">PaddingPart</td>
 </tr>
 
 <tr>
-    <th>0002</th>
+    <th>0020</th>
     <td colspan="16" style="background-color: gray"></td>
 </tr>
 
 <tr>
-    <th>0003</th>
+    <th>0030</th>
     <td colspan="16" style="background-color: #AA0000">First Part</td>
 </tr>
 <tr>
-    <th>0004</th>
+    <th>0040</th>
     <td colspan="16" style="background-color: #AA0000"></td>
 </tr>
 <tr>
-    <th>0005</th>
+    <th>0050</th>
     <td colspan="8" style="background-color: #AA0000"></td>
     <td colspan="8" style="background-color: #0000AA">Second Part</td>
 </tr>
 <tr>
-    <th>0006</th>
+    <th>0060</th>
     <td colspan="16" style="background-color: #0000AA"></td>
 </tr>
 <tr>
-    <th>0007</th>
+    <th>0070</th>
     <td colspan="16" style="background-color: #0000AA"></td>
 </tr>
 
