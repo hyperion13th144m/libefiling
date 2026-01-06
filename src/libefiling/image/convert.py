@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 from PIL import Image, ImageChops, ImageOps
 
@@ -22,18 +22,14 @@ def convert_image(
     dst_dir_path.mkdir(parents=True, exist_ok=True)
 
     for param in params:
-        attributes = (
-            get_attributes(param["attributes"]) if "attributes" in param else {}
-        )
-
         ### 保存先ファイル名の生成
-        suffix = param["suffix"] if param["suffix"] is not None else ""
-        format = param["format"] if param["format"] is not None else ".webp"
+        suffix = param.suffix if param.suffix is not None else ""
+        format = param.format if param.format is not None else ".webp"
         dst_image_path = dst_dir_path / (Path(src_image).stem + suffix + format)
 
         ### 画像変換の実行
         src_image_path = Path(src_image)
-        converted_image = convert(src_image_path, param["width"], param["height"])
+        converted_image = convert(src_image_path, param.width, param.height)
         converted_image.save(dst_image_path)
 
         ### 変換結果の記録
@@ -44,22 +40,11 @@ def convert_image(
                 "width": str(converted_image.width),
                 "height": str(converted_image.height),
                 "kind": detect_image_kind(src_image.name),
-                **attributes,
+                **param.attributes,
             }
         )
 
     return results
-
-
-def get_attributes(attributes_param: List[Dict[str, str]]) -> Dict[str, str]:
-    attributes = {}
-
-    for attr in attributes_param:
-        key = attr.get("key")
-        value = attr.get("value")
-        if key is not None and value is not None:
-            attributes[key] = value
-    return attributes
 
 
 def convert(src: Path, width: int, height: int) -> Image.Image:

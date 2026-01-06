@@ -139,6 +139,7 @@ manifest.json は、次の設計方針に基づいている。
 "images": [
   {
     "id": "img-0001",
+    "kind": "figure",
     "original": {
       "path": "raw/JPOIMG0001.tif",
       "sha256": "...",
