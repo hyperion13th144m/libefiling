@@ -2,6 +2,31 @@ import glob
 import sys
 
 from libefiling.image.convert import convert_image
+from libefiling.image.params import ImageConvertParam
+
+params = [
+    ImageConvertParam(
+        width=300,
+        height=300,
+        suffix="-thumbnail",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "thumbnail"}],
+    ),
+    ImageConvertParam(
+        width=600,
+        height=600,
+        suffix="-middle",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "middle"}],
+    ),
+    ImageConvertParam(
+        width=800,
+        height=0,
+        suffix="-large",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "large"}],
+    ),
+]
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -15,28 +40,6 @@ if __name__ == "__main__":
         result = convert_image(
             src_image,
             dst_dir,
-            params=[
-                {
-                    "width": 300,
-                    "height": 300,
-                    "suffix": "-thumbnail",
-                    "format": ".webp",
-                    "attributes": [{"key": "sizeTag", "value": "thumbnail"}],
-                },
-                {
-                    "width": 600,
-                    "height": 600,
-                    "suffix": "-middle",
-                    "format": ".webp",
-                    "attributes": [{"key": "sizeTag", "value": "middle"}],
-                },
-                {
-                    "width": 800,
-                    "height": 0,
-                    "suffix": "-large",
-                    "format": ".webp",
-                    "attributes": [{"key": "sizeTag", "value": "large"}],
-                },
-            ],
+            params=params,
         )
     result.save_as_xml(dst_dir + "/conversion_results.xml")

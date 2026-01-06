@@ -34,37 +34,43 @@ pip install libefiling
 ## 使い方
 ```python
 import sys
-from libefiling import parse_archive
+from libefiling import parse_archive, ImageConvertParam, generate_sha256
 
-params=[
-    {
-        "width": 300,
-        "height": 300,
-        "suffix": "-thumbnail",
-        "format": ".webp",
-        "attributes": [{"key": "sizeTag", "value": "thumbnail"}],
-    },
-    {
-        "width": 600,
-        "height": 600,
-        "suffix": "-middle",
-        "format": ".webp",
-        "attributes": [{"key": "sizeTag", "value": "middle"}],
-    },
-    {
-        "width": 800,
-        "height": 0,
-        "suffix": "-large",
-        "format": ".webp",
-        "attributes": [{"key": "sizeTag", "value": "large"}],
-    },
-],
+params = [
+    ImageConvertParam(
+        width=300,
+        height=300,
+        suffix="-thumbnail",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "thumbnail"}],
+    ),
+    ImageConvertParam(
+        width=600,
+        height=600,
+        suffix="-middle",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "middle"}],
+    ),
+    ImageConvertParam(
+        width=800,
+        height=0,
+        suffix="-large",
+        format=".webp",
+        attributes=[{"key": "sizeTag", "value": "large"}],
+    ),
+]
+
 SRC='202501010000123456_A163_____XXXXXXXXXX__99999999999_____AAA.JWX'
 PROC='202501010000123456_A163_____XXXXXXXXXX__99999999999_____AFM.XML'
 OUT='output'
-parse_archive(SRC, PROC, OUT, params)
+doc_id = generate_sha256(SRC)
+if doc_id === '...':
+    print("Already processed")
+else:
+    parse_archive(SRC, PROC, OUT, params)
 ```
-parse_archive の第4引数に、画像変換のパラメータを渡せる。
+generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
+parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
 OUT に各種ファイルが展開される。
 
 #### 出力ファイル
