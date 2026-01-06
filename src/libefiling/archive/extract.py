@@ -1,4 +1,3 @@
-import os
 from typing import List, Tuple
 
 from .aaa import (
@@ -29,22 +28,8 @@ def extract_archive(archive_path: str) -> List[Tuple[str, bytes]]:
     Returns:
         List[Tuple[str, bytes]]: List of extracted files as (filename, data) tuples
     Raises:
-        FileNotFoundError: when the archive file is not found
         ValueError: when the archive format is unsupported
     """
-    handlers: List[type[ArchiveHandler]] = [
-        ArchiveHandlerAAAJPC,
-        ArchiveHandlerAAAJPD,
-        ArchiveHandlerAAAJWS,
-        ArchiveHandlerAAAJWX,
-        ArchiveHandlerNNFJPC,
-        ArchiveHandlerNNFJWS,
-        ArchiveHandlerNNFJWX,
-    ]
-
-    if os.path.isfile(archive_path) is False:
-        raise FileNotFoundError(f"archive file not found: {archive_path}")
-
     with open(archive_path, "rb") as stream:
         raw_data = stream.read()
 

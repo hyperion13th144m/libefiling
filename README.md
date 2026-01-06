@@ -33,7 +33,6 @@ pip install libefiling
 
 ## 使い方
 ```python
-import sys
 from libefiling import parse_archive, ImageConvertParam, generate_sha256
 
 params = [
