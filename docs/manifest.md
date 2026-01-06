@@ -76,16 +76,26 @@ manifest.json は、次の設計方針に基づいている。
 "document": {
   "doc_id": "D000001",
   "source": {
-    "archive_filename": "input.zip",
+    "archive_filename": "...AAA.JWX",
     "archive_sha256": "...",
-    "byte_size": 12345678
+    "byte_size": 12345678,
+    "task": "A",
+    "kind": "AA",
+    "extension": ".JWX"
+  },
+  "procedure_source": {
+      "procedure_filename": "...AFM.XML",
+      "procedure_sha256": "...",
+      "byte_size": 4220
   }
 }
 ```
 
 - doc_id は、この文書単位を一意に識別するためのID
-- 後段では Elasticsearch の _id や表示URLのキーとして利用される
+- source はアーカイブファイルに関する情報
 - archive_sha256 は再処理判定や追跡用
+- task, kind, extension はファイル名から得られるアーカイブの属する業務、種類、拡張子
+- procedure_source は手続き情報ファイルに関する情報
 
 ### 4.4 paths
 ```json

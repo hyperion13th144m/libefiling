@@ -16,7 +16,8 @@ if __name__ == "__main__":
         print("Environment variable EXTRACT_SRC is not set.")
         sys.exit(1)
     output_dir = sys.argv[1]
-    items = extract_archive(EXTRACT_SRC, output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    items = extract_archive(EXTRACT_SRC)
     for name, content in items:
         output_path = os.path.join(output_dir, name)
         with open(output_path, "wb") as f:

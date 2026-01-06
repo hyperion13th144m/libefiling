@@ -12,7 +12,7 @@ Detailed documentation is written in Japanese, as the primary users are Japanese
 ## 機能
  - アーカイブの展開 -> XML, 画像ファイルが得られる
  - 画像ファイルのフォーマット変換、サイズ変換
- - XMLファイルの変換
+ - XMLファイルの文字コード変換
  - いまのところ 特許願(A163) だけが処理対象。
 
 ## 動作環境

@@ -5,7 +5,12 @@ from importlib.metadata import version as get_version
 from itertools import chain
 from pathlib import Path
 
-from libefiling.archive.utils import detect_document_id
+from libefiling.archive.utils import (
+    generate_sha256,
+    get_document_kind,
+    get_document_task,
+)
+from libefiling.image.kind import detect_image_kind
 from libefiling.image.mediatype import get_media_type
 from libefiling.image.results import ImageConvertResult
 from libefiling.manifest.model import (
@@ -29,23 +34,6 @@ from .default_config import defaultImageParams
 from .image.convert import convert_image
 from .image.params import ImageConvertParam
 from .ocr.ocr import guess_language_by_filename, ocr_image
-
-
-def generate_sha256(file_path: str) -> str:
-    """generate sha256 checksum of a file.
-
-    Args:
-        file_path (str): path to the file.
-
-    Returns:
-        str: sha256 checksum as a hex string.
-    """
-    sha256_hash = hashlib.sha256()
-    with open(file_path, "rb") as f:
-        # Read and update hash string value in blocks of 4K
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-    return sha256_hash.hexdigest()
 
 
 def parse_archive(
@@ -153,6 +141,7 @@ def parse_archive(
         images.append(
             ImageEntry(
                 id=Path(image).stem,
+                kind=detect_image_kind(image.name),
                 original=OriginalImage(
                     path=str(raw_dir.relative_to(output_root) / image.name),
                     sha256=generate_sha256(str(raw_dir / image.name)),
@@ -186,11 +175,14 @@ def parse_archive(
             created_at=datetime.now(),
         ),
         document=DocumentInfo(
-            doc_id=detect_document_id(str(Path(src_archive_path))),
+            doc_id=generate_sha256(src_archive_path),
             source=ArchiveSource(
                 archive_filename=Path(src_archive_path).name,
-                archive_sha256=generate_sha256(str(src_archive_path)),
+                archive_sha256=generate_sha256(src_archive_path),
                 byte_size=Path(src_archive_path).stat().st_size,
+                task=get_document_task(Path(src_archive_path).name),
+                kind=get_document_kind(Path(src_archive_path).name),
+                extension=Path(src_archive_path).suffix.upper(),
             ),
             procedure_source=ProcedureSource(
                 procedure_filename=Path(src_procedure_path).name,

@@ -1,4 +1,4 @@
-from pathlib import Path
+import os
 from typing import List, Tuple
 
 from .aaa import (
@@ -7,10 +7,18 @@ from .aaa import (
     ArchiveHandlerAAAJWS,
     ArchiveHandlerAAAJWX,
 )
-from .check import check_archive_name
 from .handler import ArchiveHandler
 from .nnf import ArchiveHandlerNNFJPC, ArchiveHandlerNNFJWS, ArchiveHandlerNNFJWX
-from .utils import detect_document_extension, detect_document_kind
+
+handlers: List[type[ArchiveHandler]] = [
+    ArchiveHandlerAAAJPC,
+    ArchiveHandlerAAAJPD,
+    ArchiveHandlerAAAJWS,
+    ArchiveHandlerAAAJWX,
+    ArchiveHandlerNNFJPC,
+    ArchiveHandlerNNFJWS,
+    ArchiveHandlerNNFJWX,
+]
 
 
 def extract_archive(archive_path: str) -> List[Tuple[str, bytes]]:
@@ -18,59 +26,31 @@ def extract_archive(archive_path: str) -> List[Tuple[str, bytes]]:
 
     Args:
         archive_path (str): Path of the archive
-    """
-    archive_path = Path(archive_path)
-    if check_archive_name(archive_path) is False:
-        raise ValueError(f"archive name {archive_path.name} is invalid")
-
-    handler = create_handler(archive_path)
-    return handler.get_contents()
-
-
-def create_handler(archive_path: Path) -> "ArchiveHandler":
-    """factory method to create an instance of ArchiveHandler
-
-    Args:
-        archive_path (Path): Path of the archive
-
     Returns:
-        ArchiveHandler: an instance of ArchiveHandler
+        List[Tuple[str, bytes]]: List of extracted files as (filename, data) tuples
+    Raises:
+        FileNotFoundError: when the archive file is not found
+        ValueError: when the archive format is unsupported
     """
-    ext = detect_document_extension(str(archive_path))
-    kind = detect_document_kind(str(archive_path))
+    handlers: List[type[ArchiveHandler]] = [
+        ArchiveHandlerAAAJPC,
+        ArchiveHandlerAAAJPD,
+        ArchiveHandlerAAAJWS,
+        ArchiveHandlerAAAJWX,
+        ArchiveHandlerNNFJPC,
+        ArchiveHandlerNNFJWS,
+        ArchiveHandlerNNFJWX,
+    ]
 
-    if kind == "AAA" or kind == "AER":
-        if ext == ".JWX":
-            handler = ArchiveHandlerAAAJWX
-        elif ext == ".JWS":
-            handler = ArchiveHandlerAAAJWS
-        elif ext == ".JPC":
-            handler = ArchiveHandlerAAAJPC
-        elif ext == ".JPD":
-            handler = ArchiveHandlerAAAJPD
-        else:
-            raise ValueError(f"unknwon file format: {archive_path}")
-        # extension 'JPB' is not supported due to the lack of actual data
-        # if ext == ArchiveExt.JPB:
-        #     return unkown
-    elif kind == "NNF":
-        if ext == ".JWX":
-            handler = ArchiveHandlerNNFJWX
-        elif ext == ".JWS":
-            handler = ArchiveHandlerNNFJWS
-        elif ext == ".JPC":
-            handler = ArchiveHandlerNNFJPC
-        else:
-            raise ValueError(f"unknwon file format: {archive_path}")
-        # extension JPD and JPB is not supported due to the lack of actual data
-        # elif self.kind == ArchiveKind.NNF:
-        #     if ext == ArchiveExt.JPD:
-        #         return unknown
-        #     if ext == ArchiveExt.JPB:
-        #         return unknown
+    if os.path.isfile(archive_path) is False:
+        raise FileNotFoundError(f"archive file not found: {archive_path}")
+
+    with open(archive_path, "rb") as stream:
+        raw_data = stream.read()
+
+    for handler_cls in handlers:
+        handler = handler_cls(raw_data)
+        if handler.is_valid():
+            return handler.get_contents()
     else:
-        raise ValueError(f"unknwon file format: {archive_path}")
-
-    with archive_path.open("rb") as stream:
-        archive_handler = handler(stream.read())
-    return archive_handler
+        raise ValueError(f"unsupported archive format: {archive_path.name}")

@@ -21,6 +21,10 @@ class ArchiveHandler(ABC):
         pass
 
     @abstractmethod
+    def is_valid(self) -> bool:
+        pass
+
+    @abstractmethod
     def _get_header_size(self) -> int:
         """return the header size of the archive
 

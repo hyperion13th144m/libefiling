@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,9 @@ class ArchiveSource(BaseModel):
     archive_filename: str
     archive_sha256: str
     byte_size: int
+    task: Literal["A", "N", "D", "I", "O", "P", "S"]
+    kind: Literal["AS", "AA", "NF", "ER"]
+    extension: str
 
 
 class ProcedureSource(BaseModel):
@@ -99,6 +102,7 @@ class OcrInfo(BaseModel):
 
 class ImageEntry(BaseModel):
     id: str
+    kind: Literal["chemistry", "figure", "math", "table", "image", "unknown"]
     original: OriginalImage
     derived: List[DerivedImage] = []
     ocr: Optional[OcrInfo] = None
