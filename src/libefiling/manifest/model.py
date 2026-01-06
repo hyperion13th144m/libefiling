@@ -75,13 +75,18 @@ class XmlFile(BaseModel):
 # -------------------------
 
 
+class ImageAttributes(BaseModel):
+    key: str
+    value: str
+
+
 class DerivedImage(BaseModel):
     path: str
     media_type: str = "image/webp"
     width: int
     height: int
-    size_tag: str
     sha256: str
+    attributes: List[ImageAttributes] = []
 
 
 class OriginalImage(BaseModel):

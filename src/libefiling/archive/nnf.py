@@ -5,11 +5,9 @@ from .handler import ArchiveHandler
 
 class ArchiveHandlerH16(ArchiveHandler):
     """
-    this class handles the archive having a 0x16 byte long header, dispatched from the Japan Patent Office.
+    this class handles the archive having a 0x16 byte long header,
+    dispatched from the Japan Patent Office.
     """
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
 
     def _get_header_size(self):
         return 0x16
@@ -38,13 +36,11 @@ class ArchiveHandlerH16(ArchiveHandler):
 
 
 class ArchiveHandlerNNFJPC(ArchiveHandlerH16):
-    """this class handles the archive with a JPC file extension
-
-    NNF represents an archive dispatched from the Japan Patent Office.
+    """this class handles the archive
+    task: N
+    kind: NF
+    extension: JPC
     """
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
 
     def _get_first_part(self):
         start = self._get_header_size() + self._get_some_information_size()
@@ -61,10 +57,11 @@ class ArchiveHandlerNNFJPC(ArchiveHandlerH16):
 
 
 class ArchiveHandlerNNFJWS(ArchiveHandlerH16):
-    """this class handles the archive with a JWS file extension"""
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
+    """this class handles the archive,
+    task: N
+    kind: NF
+    extension: JWS
+    """
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())
@@ -79,10 +76,11 @@ class ArchiveHandlerNNFJWS(ArchiveHandlerH16):
 
 
 class ArchiveHandlerNNFJWX(ArchiveHandlerH16):
-    """this class handles the archive with a JWX file extension"""
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
+    """this class handles the archive,
+    task: N
+    kind: NF
+    extension: JWX
+    """
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())

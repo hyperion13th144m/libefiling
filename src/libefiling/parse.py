@@ -125,7 +125,7 @@ def parse_archive(
                 sha256=generate_sha256(str(images_dir / result["new"])),
                 width=int(result["width"]),
                 height=int(result["height"]),
-                size_tag=result.get("sizeTag", "unknown"),
+                attributes=result["attributes"],
                 media_type=get_media_type(Path(result["new"]).suffix or ""),
             )
             for result in results.results

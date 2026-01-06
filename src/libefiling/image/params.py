@@ -19,8 +19,4 @@ class ImageConvertParam:
         self.height = height
         self.suffix = suffix
         self.format = format
-        self._attributes = attributes
-
-    @property
-    def attributes(self) -> dict:
-        return {attr["key"]: attr["value"] for attr in self._attributes}
+        self.attributes = attributes

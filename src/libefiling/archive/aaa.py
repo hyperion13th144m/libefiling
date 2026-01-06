@@ -9,9 +9,6 @@ class ArchiveHandlerH32(ArchiveHandler):
     submitted to the Japan Patent Office.
     """
 
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
-
     def _get_header_size(self):
         return 0x32
 
@@ -34,13 +31,11 @@ class ArchiveHandlerH32(ArchiveHandler):
 
 
 class ArchiveHandlerAAAJPC(ArchiveHandlerH32):
-    """this class handles the archive with a JPC file extension
-
-    AAA represents an archive submitted to the Japan Patent Office.
+    """this class handles the archive,
+    task: A
+    kind: AA
+    extension: JPC
     """
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())
@@ -54,10 +49,11 @@ class ArchiveHandlerAAAJPC(ArchiveHandlerH32):
 
 
 class ArchiveHandlerAAAJWX(ArchiveHandlerH32):
-    """this class handles the archive with a JWX file extension"""
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
+    """this class handles the archive,
+    task: A
+    kind: AA
+    extension: JWX
+    """
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())
@@ -72,10 +68,11 @@ class ArchiveHandlerAAAJWX(ArchiveHandlerH32):
 
 
 class ArchiveHandlerAAAJPD(ArchiveHandlerH32):
-    """this class handles the archive with a JPD file extension"""
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
+    """this class handles the archive,
+    task: A
+    kind: AA
+    extension: JPD
+    """
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())
@@ -89,10 +86,11 @@ class ArchiveHandlerAAAJPD(ArchiveHandlerH32):
 
 
 class ArchiveHandlerAAAJWS(ArchiveHandlerH32):
-    """this class handles the archive with a JWS file extension"""
-
-    def __init__(self, raw_data: bytes):
-        super().__init__(raw_data)
+    """this class handles the archive,
+    task: A
+    kind: AA
+    extension: JWS
+    """
 
     def get_contents(self):
         fp_files = self._unzip(self._get_first_part())

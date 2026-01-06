@@ -12,7 +12,7 @@ def generate_sha256(archive_path: str) -> str:
         archive_path (str): archive path
 
     Returns:
-        str: document ID
+        str: document sha256
     """
     sha256_hash = hashlib.sha256()
     with open(archive_path, "rb") as f:

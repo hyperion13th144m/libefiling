@@ -40,7 +40,7 @@ def convert_image(
                 "width": str(converted_image.width),
                 "height": str(converted_image.height),
                 "kind": detect_image_kind(src_image.name),
-                **param.attributes,
+                "attributes": param.attributes,
             }
         )
 
