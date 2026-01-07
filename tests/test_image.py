@@ -37,9 +37,11 @@ if __name__ == "__main__":
     dst_dir = sys.argv[2]
     src_images = glob.glob(f"{src_dir}/*.tif") + glob.glob(f"{src_dir}/*.jpg")
     for src_image in src_images:
-        result = convert_image(
-            src_image,
-            dst_dir,
-            params=params,
-        )
-    result.save_as_xml(dst_dir + "/conversion_results.xml")
+        for param in params:
+            dst_image_path = f"{dst_dir}/{src_image.split('/')[-1].split('.')[0]}{param.suffix if param.suffix else ''}{param.format if param.format else '.webp'}"
+            convert_image(
+                src_image,
+                dst_image_path,
+                param.width,
+                param.height,
+            )

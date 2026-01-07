@@ -1,22 +1,16 @@
-from typing import List, TypedDict
+from typing import List
+
+from pydantic import BaseModel
 
 
-class ImageAttribute(TypedDict):
+class ImageAttribute(BaseModel):
     key: str
     value: str
 
 
-class ImageConvertParam:
-    def __init__(
-        self,
-        width: int,
-        height: int,
-        suffix: str | None = None,
-        format: str | None = None,
-        attributes: List[ImageAttribute] = [],
-    ):
-        self.width = width
-        self.height = height
-        self.suffix = suffix
-        self.format = format
-        self.attributes = attributes
+class ImageConvertParam(BaseModel):
+    width: int
+    height: int
+    suffix: str = ""
+    format: str = ".webp"
+    attributes: List[ImageAttribute] = []

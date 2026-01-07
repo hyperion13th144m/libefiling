@@ -11,8 +11,8 @@ from libefiling.archive.utils import (
 )
 from libefiling.image.kind import detect_image_kind
 from libefiling.image.mediatype import get_media_type
-from libefiling.image.results import ImageConvertResult
-from libefiling.manifest.model import (
+from libefiling.image.save_as_xml import save_as_xml
+from libefiling.manifest import (
     ArchiveSource,
     DerivedImage,
     DocumentInfo,
@@ -28,11 +28,11 @@ from libefiling.manifest.model import (
 )
 
 from .archive.extract import extract_archive
-from .charset.convert import convert_xml_charset
+from .charset import convert_xml_charset
 from .default_config import defaultImageParams
 from .image.convert import convert_image
+from .image.ocr import guess_language_by_filename, ocr_image
 from .image.params import ImageConvertParam
-from .ocr.ocr import guess_language_by_filename, ocr_image
 
 
 def parse_archive(
@@ -51,21 +51,61 @@ def parse_archive(
     if not output_root.exists():
         output_root.mkdir(parents=True, exist_ok=True)
 
+    extracted_archives = extract_archive(src_archive_path)
+
     ### create output subdirectories
     raw_dir = output_root / "raw"
     xml_dir = output_root / "xml"
     images_dir = output_root / "images"
     ocr_dir = output_root / "ocr"
+    for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
+        d.mkdir(parents=True, exist_ok=True)
 
     ### extract archive to raw_dir
     ### convert charset of extracted XML files to UTF-8 and save to xml_dir
-    xml_files = []
-    extracted_archives = extract_archive(src_archive_path)
-    for filename, data in extracted_archives:
-        ### create output subdirectories after extract_archive
-        for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
-            d.mkdir(parents=True, exist_ok=True)
+    xml_files = process_archive(extracted_archives, output_root, raw_dir, xml_dir)
 
+    ### convert charset of procedure xml to UTF-8 and save to xml_dir
+    xml_files.append(
+        process_procedure_xml(src_procedure_path, output_root, raw_dir, xml_dir)
+    )
+
+    ### guess language
+    lang = guess_language_by_filename(xml_dir)
+
+    ### convert images
+    images = process_images(
+        raw_dir, images_dir, ocr_dir, output_root, image_params, lang
+    )
+
+    ### save conversion results as XML
+    xml_files.append(
+        process_conversion_results(xml_dir, images, output_root, xml_files)
+    )
+
+    manifest = process_manifest(
+        src_archive_path,
+        src_procedure_path,
+        xml_dir,
+        xml_files,
+        images,
+    )
+
+    output_path = output_root / "manifest.json"
+    output_path.write_text(
+        manifest.model_dump_json(indent=4, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def process_archive(
+    extracted_archives: list[tuple[str, bytes]],
+    output_root: Path,
+    raw_dir: Path,
+    xml_dir: Path,
+) -> list[XmlFile]:
+    xml_files = []
+    for filename, data in extracted_archives:
         ### save extracted file to raw_dir
         output_path = raw_dir / filename
         with open(output_path, "wb") as f:
@@ -88,48 +128,69 @@ def parse_archive(
             )
         )
 
-    ### convert charset of procedure xml to UTF-8 and save to temp_xml_dir
+    return xml_files
+
+
+def process_procedure_xml(
+    src_procedure_path: Path,
+    output_root: Path,
+    raw_dir: Path,
+    xml_dir: Path,
+) -> XmlFile:
+    ### copy original procedure xml to raw_dir
     orig_xml_path = f"{raw_dir}/{Path(src_procedure_path).name}"
     shutil.copy(src_procedure_path, orig_xml_path)
+
+    ### convert charset of procedure xml to UTF-8 and save to temp_xml_dir
     xml_path = Path(f"{xml_dir}/procedure.xml")
     convert_xml_charset(src_procedure_path, xml_path)
-    xml_files.append(
-        XmlFile(
-            path=str(xml_path.relative_to(output_root)),
-            original_path=str(Path(orig_xml_path).relative_to(output_root)),
-            sha256=generate_sha256(str(xml_path)),
-            encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
-        )
+    return XmlFile(
+        path=str(xml_path.relative_to(output_root)),
+        original_path=str(Path(orig_xml_path).relative_to(output_root)),
+        sha256=generate_sha256(str(xml_path)),
+        encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
     )
 
-    ### guess language
-    lang = guess_language_by_filename(xml_dir)
 
-    ### convert images
+def process_images(
+    raw_dir: Path,
+    images_dir: Path,
+    ocr_dir: Path,
+    output_root: Path,
+    image_params: list[ImageConvertParam],
+    lang: str,
+) -> list[ImageEntry]:
     images = []
-    ic_result = ImageConvertResult()
     src_images = chain(
         Path(raw_dir).glob("*.tif", case_sensitive=False),
         Path(raw_dir).glob("*.jpg", case_sensitive=False),
     )
 
     for image in src_images:
-        ### convert image and save to images_dir
-        results = convert_image(image, images_dir, image_params)
-        ic_result.add_results(results.results)
+        derived_images = []
+        for param in image_params:
+            suffix = param.suffix if param.suffix is not None else ""
+            format = param.format if param.format is not None else ".webp"
+            new = Path(image).stem + suffix + format
+            derived_image_path = images_dir / new
 
-        ### prepare DerivedImage entries
-        derived_images = [
-            DerivedImage(
-                path=str(images_dir.relative_to(output_root) / result["new"]),
-                sha256=generate_sha256(str(images_dir / result["new"])),
-                width=int(result["width"]),
-                height=int(result["height"]),
-                attributes=result["attributes"],
-                media_type=get_media_type(Path(result["new"]).suffix or ""),
+            ### convert image and save to images_dir
+            new_width, new_height = convert_image(
+                image, derived_image_path, param.width, param.height
             )
-            for result in results.results
-        ]
+
+            ### prepare DerivedImage entries
+            attributes = [attr.model_dump() for attr in param.attributes]
+            derived_images.append(
+                DerivedImage(
+                    path=str(images_dir.relative_to(output_root) / new),
+                    sha256=generate_sha256(derived_image_path),
+                    width=new_width,
+                    height=new_height,
+                    attributes=attributes,
+                    media_type=get_media_type(Path(new).suffix or ""),
+                )
+            )
 
         ### perform OCR on image and save results as text
         ocr_text = ocr_image(image, lang=lang)
@@ -154,19 +215,30 @@ def parse_archive(
                 ),
             )
         )
+    return images
 
+
+def process_conversion_results(
+    xml_dir: Path, images: list[ImageEntry], output_root: Path, xml_files: list[XmlFile]
+):
     ### save conversion results as XML
     xml_path = Path(f"{xml_dir}/image_conversion_results.xml")
-    ic_result.save_as_xml(str(xml_path))
-    xml_files.append(
-        XmlFile(
-            path=str(xml_path.relative_to(output_root)),
-            original_path="",
-            sha256=generate_sha256(str(xml_path)),
-            encoding=EncodingInfo(detected="unknown", normalized_to="UTF-8"),
-        )
+    save_as_xml(images, str(xml_path))
+    return XmlFile(
+        path=str(xml_path.relative_to(output_root)),
+        original_path="",
+        sha256=generate_sha256(str(xml_path)),
+        encoding=EncodingInfo(detected="unknown", normalized_to="UTF-8"),
     )
 
+
+def process_manifest(
+    src_archive_path: str,
+    src_procedure_path: str,
+    xml_dir: str,
+    xml_files: list[XmlFile],
+    images: list[ImageEntry],
+) -> Manifest:
     manifest = Manifest(
         generator=GeneratorInfo(
             name="libefiling",
@@ -199,8 +271,4 @@ def parse_archive(
         ),
     )
 
-    output_path = output_root / "manifest.json"
-    output_path.write_text(
-        manifest.model_dump_json(indent=4, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    return manifest

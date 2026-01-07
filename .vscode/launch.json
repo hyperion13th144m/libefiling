@@ -43,8 +43,9 @@
             "program": "tests/test_ocr.py",
             "console": "integratedTerminal",
             "args": [
-                "output/extracted",
-                "output/ocr.json"
+                "output/extracted/JPOXMLDOC01-appb-D000001.tif",
+                "output/ocr.txt",
+                "jpn"
             ]
         },
         {

@@ -150,7 +150,12 @@ manifest.json は、次の設計方針に基づいている。
         "path": "images/JPOIMG0001-thumbnail.webp",
         "width": 300,
         "height": 300,
-        "size_tag": "thumbnail",
+        "attributes": [
+           {
+                "key": "sizeTag",
+                "value": "thumbnail"
+           }
+        ],
         "sha256": "..."
       }
     ],
@@ -170,6 +175,7 @@ manifest.json は、次の設計方針に基づいている。
 
 - original は元の画像（主に TIF）
 - derived は Web 表示用に生成された画像
+- deribed 内の attributes は画像変換時の付加情報を格納する
 - OCR 結果は画像単位で紐づけられる
 
 

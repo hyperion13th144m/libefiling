@@ -1,50 +1,25 @@
 from pathlib import Path
-from typing import List
 
 from PIL import Image, ImageChops, ImageOps
 
-from .kind import detect_image_kind
-from .params import ImageConvertParam
-from .results import ImageConvertResult
-
 
 def convert_image(
-    src_image: Path, dst_dir: str, params: List[ImageConvertParam]
-) -> ImageConvertResult:
-    """convert images in src_images list and save them to dst_dir.
+    src_image: Path, dst_image: Path, width: int, height: int
+) -> tuple[int, int]:
+    """convert src_images and save as dst_image.
 
     Args:
         src_image (Path): source image path
-        dst_dir (str): destination directory path
-        params (List[ImageConvertParam]): configurations for image conversion"""
-    results = ImageConvertResult()
-    dst_dir_path = Path(dst_dir)
-    dst_dir_path.mkdir(parents=True, exist_ok=True)
+        dst_image (Path): destination image path
+        width (int): target width
+        height (int): target height
+    """
 
-    for param in params:
-        ### 保存先ファイル名の生成
-        suffix = param.suffix if param.suffix is not None else ""
-        format = param.format if param.format is not None else ".webp"
-        dst_image_path = dst_dir_path / (Path(src_image).stem + suffix + format)
+    ### 画像変換の実行
+    converted_image = convert(src_image, width, height)
+    converted_image.save(dst_image)
 
-        ### 画像変換の実行
-        src_image_path = Path(src_image)
-        converted_image = convert(src_image_path, param.width, param.height)
-        converted_image.save(dst_image_path)
-
-        ### 変換結果の記録
-        results.add_result(
-            {
-                "orig": src_image_path.name,
-                "new": dst_image_path.name,
-                "width": str(converted_image.width),
-                "height": str(converted_image.height),
-                "kind": detect_image_kind(src_image.name),
-                "attributes": param.attributes,
-            }
-        )
-
-    return results
+    return (converted_image.width, converted_image.height)
 
 
 def convert(src: Path, width: int, height: int) -> Image.Image:
