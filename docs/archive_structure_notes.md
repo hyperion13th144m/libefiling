@@ -37,12 +37,14 @@
  - NF 発送書類
 
 拡張子
- - JPA：特許庁送受信Xフォーマットファイル
- - JPB：特許庁送受信旧SGMLフォーマットファイル　←pkgheader無しSGML
- - JPC：特許庁送受信XMLフォーマットファイル　インターネット出願ソフト緊急避難用送信XMLフォーマットファイル
- - JPD：特許庁送受信新SGMLフォーマットファイル　←pkgheader付きSGML インターネット出願ソフト緊急避難用送信SGMLフォーマットファイル
- - JWX：特許庁送受信電子署名付XMLファイルフォーマット
- - JWS：特許庁送受信電子署名付SGMLファイルフォーマット
+| 拡張子 | 意味 |
+|--------|------|
+| JPA    | 特許庁送受信Xフォーマットファイル |
+| JPB    | 特許庁送受信旧SGMLフォーマットファイル ←pkgheader無しSGML|
+| JPC    | 特許庁送受信XMLフォーマットファイル   |
+| JPD    | 特許庁送受信新SGMLフォーマットファイル ←pkgheader付きSGML |
+| JWX    | 特許庁送受信電子署名付XMLファイルフォーマット |
+| JWS    | 特許庁送受信電子署名付SGMLファイルフォーマット |
 
 ## 2. 用語
 - 「電子出願アーカイブ(単にアーカイブとも)」: 仕様「１．１．２ ファイル構成」の「ファイル」のこと
@@ -70,7 +72,6 @@
 実際の電子出願アーカイブを解析した結果、以下のような構造が観測された。
 
 ### 4.1 出願系
-#### 4.1.1 基本構造
 出願系アーカイブの16進ダンプは次のようである。
 <table>
 <tr>
@@ -146,48 +147,18 @@
 </tr>
 </table>
 
-- ヘッダ:ファイルの先頭から 0x32バイトの固定長のヘッダ
-- First part:可変長バイト列。ヘッダのあとのから始まる。
-- Second part:可変長バイト列。First Part の後から始まる。
-- アーカイブ全体のファイルサイズ = 先頭の magic number の 6 bytes + Payload Size （4bytes (unsigned?) integer)
-- First Part のサイズ: ヘッダの First Part Size（4bytes (unsigned?) integer)
-- Second Part のサイズ: ヘッダの Second Part Size（4bytes (unsigned?) integer)
+| 項目 | サイズ (bytes) | start position | 説明 |
+|------|----------------|------|---|
+| header | 0x32 (50) | 0x00 | 固定長ヘッダ |
+| magic number | 6 | 0x00 | 出願系・発送系・拡張子により異なる識別子(と思われる) |
+| Payload Size | 4 | 0x06 | アーカイブ全体のファイルサイズから sizeof(magic number)=6 を引いた値 |
+| First Part Size | 4 | 0x0A | 4-bytes unsigned? integer for sizeof the First Part |
+| Second Part Size | 4 | 0x12 | 4-bytes unsigned? integer for sizeof the Second Part |
+| First part | variable length | 0x32 | 1st part bytes-array |
+| Second part | variable length | 0x32 + First Part Size | 2nd part bytes-array |
 
-magic number, First part, Second part は、出願系・発送系・拡張子により異なる。
-
-magic number は、出願系・発送系・拡張子に応じた値だとおもうが、確信はない。
-
-#### 4.1.2 AAA.JWX
-- magic number: 49-31-32-30-31-30
-- First Part: ZIP 形式
-- Second Part: ZIPを含む WAD 形式
-
-AAA.JWXは、 「1．1．2 ファイル構成 (1)のアーカイブ」に該当し、
-そのFirst Part は　ZIP, Second Part は WADのことだとおもう。
-
-#### 4.1.3 AAA.JWS
-- magic number: 49-31-33-30-31-30
-- First Part: ZIP 形式
-- Second Part: MIME を含む WAD 形式
-
-AAA.JWSは 「1．1．2 ファイル構成 (1)のアーカイブ」に似ているが、WAD内がZIPではなくMIME（multipart mime）である。
-
-#### 4.1.4 AAA.JPC
-- magic number: 30-31-32-30-31-30
-- First Part: ZIP 形式
-- Second Part: ZIP 形式
-
-AAA.JPCは 「1．1．2 ファイル構成 (1)のアーカイブ」に似ているが、WADではなくZIPである。
-
-#### 4.1.5 AAA.JPD
-- magic number: 30-31-33-30-31-30
-- First Part: ZIP 形式
-- Second Part: MIME 形式
-
-AAA.JPDは 「1．1．2 ファイル構成 (1)のアーカイブ」に似ているが、WADではなくMIME（multipart mime）である。
 
 ### 4.2 発送系
-#### 4.2.1 基本構造
 発送系アーカイブの16進ダンプは次のようである。
 <table>
 <tr>
@@ -262,41 +233,41 @@ AAA.JPDは 「1．1．2 ファイル構成 (1)のアーカイブ」に似てい�
 </tr>
 </table>
 
-- ヘッダ:ファイルの先頭から 0x16バイトの固定長のヘッダ
-- padding part: ヘッダの後のなんらかのバイト列
-- First part:可変長バイト列。ヘッダーサイズ(0x16) + Padding Part Size から始まる
-- Second Part:可変長バイト列。ヘッダーサイズ(0x16) + Padding Part Size + First Part Size から始まる。
-- アーカイブ全体のファイルサイズ = 先頭の magic number の 6 bytes + Payload Size （4bytes (unsigned?) integer)
-- First Part のサイズ: ヘッダの First Part Size（4bytes (unsigned?) integer)
-- Second Part のサイズ: ヘッダの Second Part Size（4bytes (unsigned?) integer)
+| 項目 | サイズ (bytes) | start position | 説明 |
+|------|----------------|------|---|
+| header | 0x16 (22) | 0x00 | 固定長ヘッダ |
+| magic number | 6 | 0x00 | 出願系・発送系・拡張子により異なる識別子(と思われる) |
+| Payload Size | 4 | 0x06 | アーカイブ全体のファイルサイズから sizeof(magic number)=6 を引いた値 |
+| Padding Part Size | 4 | 0x0A | 4-bytes unsigned? integer for size of the Padding Part|
+| First Part Size | 4 | 0x0E | 4-bytes unsigned? integer for sizeof the First Part |
+| Second Part Size | 4 | 0x12 | 4-bytes unsigned? integer for sizeof the Second Part |
+| Padding Part | variable? length | 0x16 | Padding Part bytes-array |
+| First part | variable length | 0x16 + Padding Part Size | 1st part bytes-array |
+| Second part | variable length | 0x16 + Padding Part Size + First Part Size | 2nd part bytes-array |
 
-#### 4.2.2 NNF.JWX
-- magic number: 49-32-32-30-32-30
-- First Part: ZIP 形式
-- Second Part: ZIPを含むWAD形式
 
-NNF.JWXは、 「1．1．2 ファイル構成 (2)①のアーカイブ」に該当し、
+### 4.3  一覧
+下表は、出願系・発送系アーカイブの種類ごとの magic number と First Part, Second Part の形式をまとめたものである。
+
+| No.| ファイル種別 | magic number (16進) | magic number(ASCII) | First Part | Second Part |
+|----|--------------|---------------------|------|---------|-------------|
+| 1 | AAA.JWX      | 49-31-32-30-31-30 | I12010 |  ZIP | ZIP in WAD  |
+| 2 | AAA.JWS      | 49-31-33-30-31-30 | I13010 |  ZIP | MIME in WAD |
+| 3 | AAA.JPC      | 30-31-32-30-31-30 | 012010 |  ZIP | ZIP |
+| 4 | AAA.JPD      | 30-31-33-30-31-30 | 013010 |  ZIP | MIME |
+| 5 | NNF.JWX      | 49-32-32-30-32-30 | I22020 | ZIP | ZIP in WAD |
+| 6 | NNF.JWS      | 49-32-31-30-32-30 | I21020 | ZIP  | MIME in WAD |
+| 7 | NNF.JPC      | 30-32-32-30-32-30 | 022020 | ZIP  |  なし |
+
+ - No.1 AAA.JWXは、 「1．1．2 ファイル構成 (1)のアーカイブ」に該当し、そのFirst Part は　ZIP, Second Part は WADのことだとおもう。
+ - No.5 NNF.JWXは、 「1．1．2 ファイル構成 (2)①のアーカイブ」に該当し、
 そのFirst Part は　ZIP, Second Part は WADのことだとおもう。
-
-#### 4.2.3 NNF.JWS
-- magic number: 49-32-31-30-32-30
-- First Part: ZIP 形式
-- Second Part: MIME を含む WAD 形式
-
-NNF.JWSは、 「1．1．2 ファイル構成 (2)①のアーカイブ」に似ているが、
-Second Part が MIMEを含むWAD形式である。
-
-#### 4.2.4 NNF.JPC
-- magic number: 30-32-32-30-32-30
-- First Part: ZIP 形式
-- Second Part: なし
-
-NNF.JPCは 「1．1．2 ファイル構成 (2)②のアーカイブ」に該当し、
+ - No.7 NNF.JPCは 「1．1．2 ファイル構成 (2)②のアーカイブ」に該当し、
 First Partは そのアーカイブのZIPに該当すると思う。
 
-### 4.3 WAD 形式
+### 4.4 WAD 形式
 WAD 形式は、 Wrapped Application Documents の略だそうだ。ASN.1 フォーマットのデータである。
-WADに含まれる ZIP や MIME を取得するためには、PKCS#7 SignedData - PKCS#7 Data を抜き出せばよさそう。oid を指定して抜き出せる。
+WADに含まれる ZIP や MIME を取得するためには、PKCS#7 SignedData を抜き出せばよさそう。oid を指定して抜き出せる。
 
   dot notation:
 　1.2.840.113549.1.7.1
@@ -305,17 +276,6 @@ WADに含まれる ZIP や MIME を取得するためには、PKCS#7 SignedData 
   {iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-7(7) id-data(1)}
 
 抜き出したデータは、ZIPかmultipart mimeなので、そこからファイルを得られる。
-
-### 4.4 magic number 一覧
-| ファイル種別 | magic number (16進) | ASCII |
-|--------------|---------------------|------|
-| AAA.JWX      | 49-31-32-30-31-30 | I12010 |
-| AAA.JWS      | 49-31-33-30-31-30 | I13010 |
-| AAA.JPC      | 30-31-32-30-31-30 | 012010 |
-| AAA.JPD      | 30-31-33-30-31-30 | 013010 |
-| NNF.JWX      | 49-32-32-30-32-30 | I22020 |
-| NNF.JWS      | 49-32-31-30-32-30 | I21020 |
-| NNF.JPC      | 30-32-32-30-32-30 | 022020 |
 
 ## 5. 既知の例外・注意点
 - WAD の oid は、仕様書で明記されていない。なのでそれ以外のoidを使ったファイルがあったら、うまくZIPやMIMEを取り出せない可能性がある。4-500件ぐらいを対象にしたところ、いまのところそのoidで抜け出しできている。

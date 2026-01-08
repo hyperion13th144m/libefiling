@@ -42,11 +42,6 @@ class ArchiveHandlerNNFJPC(ArchiveHandlerH16):
     extension: JPC
     """
 
-    def _get_first_part(self):
-        start = self._get_header_size() + self._get_some_information_size()
-        sp_size = self._get_second_part_size()
-        return self._raw_data[start : start + sp_size]
-
     def get_contents(self):
         return self._unzip(self._get_first_part())
 
