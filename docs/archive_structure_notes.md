@@ -9,6 +9,7 @@
 
  1-4 ページ「１．１．２　ファイル構成」を引用
 > （１）出願人・代理人の方が出願時に送信するとき 
+
 ![file-1](./file-1.png)
 
 >（２）出願人・代理人の方に発送するとき 
@@ -36,12 +37,12 @@
  - NF 発送書類
 
 拡張子
- - JPA：特許庁送受信Xﾌｫｰﾏｯﾄﾌｧｲﾙ
- - JPB：特許庁送受信旧SGMLﾌｫｰﾏｯﾄﾌｧｲﾙ　←pkgheader無しSGML
- - JPC：特許庁送受信XMLﾌｫｰﾏｯﾄﾌｧｲﾙ ｲﾝﾀｰﾈｯﾄ出願ｿﾌﾄ緊急避難用送信XMLﾌｫｰﾏｯﾄﾌｧｲﾙ
- - JPD：特許庁送受信新SGMLﾌｫｰﾏｯﾄﾌｧｲﾙ　←pkgheader付きSGML ｲﾝﾀｰﾈｯﾄ出願ｿﾌﾄ緊急避難用送信SGMLﾌｫｰﾏｯﾄﾌｧｲﾙ
- - JWX：特許庁送受信電子署名付XMLﾌｧｲﾙﾌｫｰﾏｯﾄ
- - JWS：特許庁送受信電子署名付SGMLﾌｧｲﾙﾌｫｰﾏｯﾄ
+ - JPA：特許庁送受信Xフォーマットファイル
+ - JPB：特許庁送受信旧SGMLフォーマットファイル　←pkgheader無しSGML
+ - JPC：特許庁送受信XMLフォーマットファイル　インターネット出願ソフト緊急避難用送信XMLフォーマットファイル
+ - JPD：特許庁送受信新SGMLフォーマットファイル　←pkgheader付きSGML インターネット出願ソフト緊急避難用送信SGMLフォーマットファイル
+ - JWX：特許庁送受信電子署名付XMLファイルフォーマット
+ - JWS：特許庁送受信電子署名付SGMLファイルフォーマット
 
 ## 2. 用語
 - 「電子出願アーカイブ(単にアーカイブとも)」: 仕様「１．１．２ ファイル構成」の「ファイル」のこと
@@ -145,9 +146,9 @@
 </tr>
 </table>
 
-- ファイルの先頭から 0x32バイトは固定長のヘッダ
-- ヘッダのあとに FirstPartが続く
-- First Part の後に Second Part が続く。
+- ヘッダ:ファイルの先頭から 0x32バイトの固定長のヘッダ
+- First part:可変長バイト列。ヘッダのあとのから始まる。
+- Second part:可変長バイト列。First Part の後から始まる。
 - アーカイブ全体のファイルサイズ = 先頭の magic number の 6 bytes + Payload Size （4bytes (unsigned?) integer)
 - First Part のサイズ: ヘッダの First Part Size（4bytes (unsigned?) integer)
 - Second Part のサイズ: ヘッダの Second Part Size（4bytes (unsigned?) integer)
@@ -261,10 +262,10 @@ AAA.JPDは 「1．1．2 ファイル構成 (1)のアーカイブ」に似てい�
 </tr>
 </table>
 
-- ファイルの先頭から 0x16 バイトは固定長のヘッダ
-- ヘッダのあとに なにか(Padding Part)がある
-- First part はヘッダーサイズ(0x16) + Padding Part Size から始まる
-- Second Part は ヘッダーサイズ(0x16) + Padding Part Size + First Part Size から始まる。
+- ヘッダ:ファイルの先頭から 0x16バイトの固定長のヘッダ
+- padding part: ヘッダの後のなんらかのバイト列
+- First part:可変長バイト列。ヘッダーサイズ(0x16) + Padding Part Size から始まる
+- Second Part:可変長バイト列。ヘッダーサイズ(0x16) + Padding Part Size + First Part Size から始まる。
 - アーカイブ全体のファイルサイズ = 先頭の magic number の 6 bytes + Payload Size （4bytes (unsigned?) integer)
 - First Part のサイズ: ヘッダの First Part Size（4bytes (unsigned?) integer)
 - Second Part のサイズ: ヘッダの Second Part Size（4bytes (unsigned?) integer)
