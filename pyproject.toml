@@ -1,6 +1,6 @@
 [project]
 name = "libefiling"
-version = "0.1.30"
+version = "0.1.31"
 authors = [{ name = "hyperion13th144m", email = "hyperion13th144m@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
