@@ -257,13 +257,13 @@
 | 4 | AAA.JPD      | 30-31-33-30-31-30 | 013010 |  ZIP | MIME |
 | 5 | NNF.JWX      | 49-32-32-30-32-30 | I22020 | ZIP | ZIP in WAD |
 | 6 | NNF.JWS      | 49-32-31-30-32-30 | I21020 | ZIP  | MIME in WAD |
-| 7 | NNF.JPC      | 30-32-32-30-32-30 | 022020 | ZIP  |  なし |
+| 7 | NNF.JPC      | 30-32-32-30-32-30 | 022020 |  なし  | ZIP |
 
  - No.1 AAA.JWXは、 「1．1．2 ファイル構成 (1)のアーカイブ」に該当し、そのFirst Part は　ZIP, Second Part は WADのことだとおもう。
  - No.5 NNF.JWXは、 「1．1．2 ファイル構成 (2)①のアーカイブ」に該当し、
 そのFirst Part は　ZIP, Second Part は WADのことだとおもう。
  - No.7 NNF.JPCは 「1．1．2 ファイル構成 (2)②のアーカイブ」に該当し、
-First Partは そのアーカイブのZIPに該当すると思う。
+Second Partは そのアーカイブのZIPに該当すると思う。First Part は存在しないのにSecondPartというのも変だが、Second Part Size が Second Part のサイズを示しているのは間違いないように思う。
 
 ### 4.4 WAD 形式
 WAD 形式は、 Wrapped Application Documents の略だそうだ。ASN.1 フォーマットのデータである。
