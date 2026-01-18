@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Literal, Optional
+from pathlib import Path
+from typing import List, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field
 
@@ -16,25 +17,53 @@ class GeneratorInfo(BaseModel):
     created_at: datetime
 
 
-class ArchiveSource(BaseModel):
-    archive_filename: str
-    archive_sha256: str
+SourceTask = Literal["A", "N", "D", "I", "O", "P", "S", "X"]
+SourceKind = Literal["AS", "AA", "NF", "ER", "FM", "XX"]
+source_task: list[str] = list(get_args(SourceTask))
+source_kind: list[str] = list(get_args(SourceKind))
+
+
+class Source(BaseModel):
+    filename: str
+    sha256: str
     byte_size: int
-    task: Literal["A", "N", "D", "I", "O", "P", "S"]
-    kind: Literal["AS", "AA", "NF", "ER"]
+    task: SourceTask
+    kind: SourceKind
     extension: str
 
+    @classmethod
+    def create(cls, file_path: Path, sha256: str) -> Source:
+        """Create Source from file path
 
-class ProcedureSource(BaseModel):
-    procedure_filename: str
-    procedure_sha256: str
-    byte_size: int
+        Args:
+            file_path (Path): file path
+        """
+        filename = file_path.name
+        byte_size = file_path.stat().st_size
+        if len(filename) == 63:
+            task = file_path.stem[56 : 56 + 1]
+            kind_code = file_path.stem[57 : 57 + 2]
+            if task not in source_task:
+                task = "X"  # X means unknown
+            if kind_code not in source_kind:
+                kind_code = "XX"  # XX means unknown
+        else:
+            task = "X"  # X means unknown
+            kind_code = "XX"  # XX means unknown
+        extension = file_path.suffix.upper()
+        return cls(
+            filename=filename,
+            sha256=sha256,
+            byte_size=byte_size,
+            task=task,
+            kind=kind_code,
+            extension=extension,
+        )
 
 
 class DocumentInfo(BaseModel):
     doc_id: str
-    source: ArchiveSource
-    procedure_source: ProcedureSource
+    sources: List[Source]
 
 
 # -------------------------
@@ -62,8 +91,8 @@ class EncodingInfo(BaseModel):
 
 
 class XmlFile(BaseModel):
-    path: str
-    original_path: Optional[str] = None
+    path: Path
+    original_path: Path
     sha256: str
     encoding: EncodingInfo
     media_type: str = "application/xml"
@@ -81,7 +110,7 @@ class ImageAttributes(BaseModel):
 
 
 class DerivedImage(BaseModel):
-    path: str
+    path: str | Path
     media_type: str = "image/webp"
     width: int
     height: int
@@ -90,13 +119,13 @@ class DerivedImage(BaseModel):
 
 
 class OriginalImage(BaseModel):
-    path: str
+    path: Path
     sha256: str
     media_type: str = "image/tiff"
 
 
 class OcrInfo(BaseModel):
-    path: str
+    path: Path
     format: str = "text/plain"
     sha256: str
     lang: Optional[str] = "jpn"

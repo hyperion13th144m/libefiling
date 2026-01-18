@@ -11,9 +11,9 @@ def save_as_xml(image_entries: List[ImageEntry], file_path: str):
             elem = ET.Element(
                 "image",
                 {
-                    "orig-path": entry.original.path,
-                    "orig-filename": entry.original.path.split("/")[-1],
-                    "new": derived.path,
+                    "orig-path": str(entry.original.path),
+                    "orig-filename": entry.original.path.name,
+                    "new": str(derived.path),
                     "width": str(derived.width),
                     "height": str(derived.height),
                     "kind": entry.kind,
