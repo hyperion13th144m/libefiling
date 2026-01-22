@@ -1,6 +1,6 @@
 [project]
 name = "libefiling"
-version = "0.1.33"
+version = "0.1.34"
 authors = [{ name = "hyperion13th144m", email = "hyperion13th144m@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,6 +25,9 @@ packages = [{ include = "libefiling", from = "src" }]
 include = ["docs/**/*"]
 homepage = "https://github.com/hyperion13th144m/libefiling"
 repository = "https://github.com/hyperion13th144m/libefiling"
+
+[tool.poetry.scripts]
+libefiling = "libefiling.cli:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

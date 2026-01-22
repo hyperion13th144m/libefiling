@@ -35,6 +35,7 @@ def parse_archive(
     src_procedure_path: str,
     output_dir: str,
     image_params: list[ImageConvertParam] = defaultImageParams,
+    skip_ocr: bool = True,
 ):
     """parse e-filing archive and generate various outputs."""
 
@@ -70,7 +71,7 @@ def parse_archive(
 
     ### convert images
     images = process_images(
-        raw_dir, images_dir, ocr_dir, output_root, image_params, lang
+        raw_dir, images_dir, ocr_dir, output_root, image_params, lang, skip_ocr
     )
 
     ### save conversion results as XML
@@ -154,6 +155,7 @@ def process_images(
     output_root: Path,
     image_params: list[ImageConvertParam],
     lang: str,
+    skip_ocr: bool = True,
 ) -> list[ImageEntry]:
     images = []
     src_images = chain(
@@ -188,10 +190,18 @@ def process_images(
             )
 
         ### perform OCR on image and save results as text
-        ocr_text = ocr_image(image, lang=lang)
-        ocr_path = ocr_dir / (Path(image).stem + ".txt")
-        with open(ocr_path, "w", encoding="utf-8") as f:
-            f.write(ocr_text)
+        if skip_ocr:
+            ocr = None
+        else:
+            ocr_text = ocr_image(image, lang=lang)
+            ocr_path = ocr_dir / (Path(image).stem + ".txt")
+            with open(ocr_path, "w", encoding="utf-8") as f:
+                f.write(ocr_text)
+            ocr = OcrInfo(
+                path=ocr_path.relative_to(output_root),
+                sha256=generate_sha256(ocr_path),
+                lang=lang,
+            )
 
         images.append(
             ImageEntry(
@@ -203,11 +213,7 @@ def process_images(
                     media_type=get_media_type(image.suffix),
                 ),
                 derived=derived_images,
-                ocr=OcrInfo(
-                    path=ocr_path.relative_to(output_root),
-                    sha256=generate_sha256(ocr_path),
-                    lang=lang,
-                ),
+                ocr=ocr,
             )
         )
     return images
