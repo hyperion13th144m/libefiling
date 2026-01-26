@@ -136,7 +136,9 @@ class OcrInfo(BaseModel):
 
 class ImageEntry(BaseModel):
     id: str
-    kind: Literal["chemistry", "figure", "math", "table", "image", "unknown"]
+    kind: Literal[
+        "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
+    ]
     original: OriginalImage
     derived: List[DerivedImage] = []
     ocr: Optional[OcrInfo] = None
