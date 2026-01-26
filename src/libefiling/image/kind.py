@@ -20,19 +20,21 @@ re_jpntce = re.compile("[0-9]+-jpntce-I[0-9]+")
 
 def detect_image_kind(
     image_name: str,
-) -> Literal["chemistry", "figure", "math", "table", "image", "unknown"]:
+) -> Literal[
+    "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
+]:
     """detect image kind from image name
 
     Args:
         image_name (str): image name"""
     if re_chemistry.match(image_name):
-        return "chemistry"
+        return "chemical-formulas"
     elif re_figure.match(image_name):
-        return "figure"
+        return "figures"
     elif re_math.match(image_name):
-        return "math"
+        return "equations"
     elif re_table.match(image_name):
-        return "table"
+        return "tables"
     elif (
         re_appb_image.match(image_name)
         or re_jpbibl.match(image_name)
@@ -46,6 +48,6 @@ def detect_image_kind(
         or re_online_jpatta.match(image_name)
         or re_jpntce.match(image_name)
     ):
-        return "image"
+        return "other-images"
     else:
         return "unknown"
