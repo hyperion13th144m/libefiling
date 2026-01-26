@@ -1,9 +1,6 @@
 import hashlib
 from pathlib import Path
 
-### Internet naminで送受信したファイル名に基づいて、各種データを取得する関数群
-### https://www.pcinfo.jpo.go.jp/site/3_support/2_faq/pdf/09_09_file-name.pdf
-
 
 def generate_sha256(archive_path: str | Path) -> str:
     """return document sha256 based on archive_path content
