@@ -17,40 +17,30 @@ class GeneratorInfo(BaseModel):
     created_at: datetime
 
 
-SourceTask = Literal["A", "N", "D", "I", "O", "P", "S", "X"]
-SourceKind = Literal["AS", "AA", "NF", "ER", "FM", "XX"]
-source_task: list[str] = list(get_args(SourceTask))
-source_kind: list[str] = list(get_args(SourceKind))
-
-
 class Source(BaseModel):
     filename: str
     sha256: str
     byte_size: int
-    task: SourceTask
-    kind: SourceKind
+    task: str
+    kind: str
     extension: str
 
     @classmethod
-    def create(cls, file_path: Path, sha256: str) -> Source:
+    def create(cls, file_path: str, sha256: str) -> Source:
         """Create Source from file path
 
         Args:
-            file_path (Path): file path
+            file_path (str): file path
         """
-        filename = file_path.name
-        byte_size = file_path.stat().st_size
+        filename = Path(file_path).name
+        byte_size = Path(file_path).stat().st_size
         if len(filename) == 63:
-            task = file_path.stem[56 : 56 + 1]
-            kind_code = file_path.stem[57 : 57 + 2]
-            if task not in source_task:
-                task = "X"  # X means unknown
-            if kind_code not in source_kind:
-                kind_code = "XX"  # XX means unknown
+            task = filename[56 : 56 + 1]
+            kind_code = filename[57 : 57 + 2]
         else:
             task = "X"  # X means unknown
             kind_code = "XX"  # XX means unknown
-        extension = file_path.suffix.upper()
+        extension = Path(file_path).suffix.upper()
         return cls(
             filename=filename,
             sha256=sha256,
@@ -91,12 +81,11 @@ class EncodingInfo(BaseModel):
 
 
 class XmlFile(BaseModel):
-    path: Path
-    original_path: Path
+    filename: str
+    original_filename: Optional[str] = None
     sha256: str
     encoding: EncodingInfo
     media_type: str = "application/xml"
-    role_hint: str = "unknown"
 
 
 # -------------------------
@@ -110,7 +99,7 @@ class ImageAttributes(BaseModel):
 
 
 class DerivedImage(BaseModel):
-    path: str | Path
+    filename: str
     media_type: str = "image/webp"
     width: int
     height: int
@@ -118,14 +107,8 @@ class DerivedImage(BaseModel):
     attributes: List[ImageAttributes] = []
 
 
-class OriginalImage(BaseModel):
-    path: Path
-    sha256: str
-    media_type: str = "image/tiff"
-
-
 class OcrInfo(BaseModel):
-    path: Path
+    filename: str
     format: str = "text/plain"
     sha256: str
     lang: Optional[str] = "jpn"
@@ -135,11 +118,12 @@ class OcrInfo(BaseModel):
 
 
 class ImageEntry(BaseModel):
-    id: str
+    filename: str
+    sha256: str
+    media_type: str = "image/tiff"
     kind: Literal[
         "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
     ]
-    original: OriginalImage
     derived: List[DerivedImage] = []
     ocr: Optional[OcrInfo] = None
 

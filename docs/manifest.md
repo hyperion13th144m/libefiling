@@ -131,44 +131,44 @@ manifest.json は、次の設計方針に基づいている。
 
 - 各リソースが配置されているディレクトリ名
 - 相対パスとして解釈される
-- 後段処理は これらの値のみを参照してファイルにアクセスする
-
+  - raw_dir はアーカイブから抽出され、無変換のXML, 画像ファイルを配置するディレクトリ。
+  - xml_dir は 文字コードを UTF-8に変換した XML ファイルを配置するディレクトリ。
+  - images_dir は サイズ、フォーマット変換した画像ファイルを配置するディレクトリ。
+  - ocr_dir は 画像から抽出したテキストファイルを配置するディレクトリ。
+ 
 
 ### 4.5 xml_files
 ```json
 "xml_files": [
   {
-    "path": "xml/JPOXMLDOC01.xml",
-    "original_path_in_archive": "JPOXMLDOC01.xml",
+    "filename": "JPOXMLDOC01.xml",
+    "original_filename": null,
     "sha256": "...",
     "encoding": {
       "detected": "Shift_JIS",
       "normalized_to": "UTF-8",
       "had_bom": false
-    },
-    "role_hint": "unknown"
+    }
   }
 ]
 ```
 
 - アーカイブに含まれていた XML ファイルの一覧
 - libefiling は XML の役割（請求項、明細書等）を 確定しない
-- role_hint は将来拡張用であり、初期状態では unknown とする
+- 変換前の filename は raw_dirにある。変換後の filename は xml_dirにある
+- 変換前後で名前が変わっている場合は、変換前のファイル名を original_filename に記録する
 
 ### 4.6 images
 ```json
 "images": [
   {
-    "id": "img-0001",
+    "filename": "JPOIMG0001.tif",
+    "sha256": "...",
+    "media_type": "image/tiff",
     "kind": "figure",
-    "original": {
-      "path": "raw/JPOIMG0001.tif",
-      "sha256": "...",
-      "media_type": "image/tiff"
-    },
     "derived": [
       {
-        "path": "images/JPOIMG0001-thumbnail.webp",
+        "path": "JPOIMG0001-thumbnail.webp",
         "width": 300,
         "height": 300,
         "attributes": [
@@ -184,7 +184,7 @@ manifest.json は、次の設計方針に基づいている。
       "enabled": true,
       "results": [
         {
-          "path": "ocr/img-0001.txt",
+          "path": "img-0001.txt",
           "sha256": "...",
           "lang": "jpn"
         }
@@ -194,9 +194,9 @@ manifest.json は、次の設計方針に基づいている。
 ]
 ```
 
-- original は元の画像（主に TIF）
+- filename は元の画像（主に TIF）
 - derived は Web 表示用に生成された画像
-- deribed 内の attributes は画像変換時の付加情報を格納する
+- derived 内の attributes は画像変換時の付加情報を格納する
 - OCR 結果は画像単位で紐づけられる
 
 

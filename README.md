@@ -93,5 +93,7 @@ MIT ライセンス
   https://www.jpo.go.jp/system/patent/gaiyo/sesaku/document/touroku_jyohou_kikan/shomen-entry-02jpo-shiyosho.pdf
 
 
-## TODO
-意見書、補正書、拒絶理由通知書あたりの対応
+## 変更履歴
+0.1.40
+ - manifest の形式変更
+   - xml, image の path を filename にした。

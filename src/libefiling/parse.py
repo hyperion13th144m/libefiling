@@ -7,16 +7,15 @@ from pathlib import Path
 from libefiling.archive.utils import generate_sha256
 from libefiling.image.kind import detect_image_kind
 from libefiling.image.mediatype import get_media_type
-from libefiling.image.save_as_xml import save_as_xml
 from libefiling.manifest import (
     DerivedImage,
     DocumentInfo,
     EncodingInfo,
     GeneratorInfo,
+    ImageAttributes,
     ImageEntry,
     Manifest,
     OcrInfo,
-    OriginalImage,
     Source,
     Stats,
     XmlFile,
@@ -63,11 +62,11 @@ def parse_archive(
 
     ### convert charset of procedure xml to UTF-8 and save to xml_dir
     xml_files.append(
-        process_procedure_xml(src_procedure_path, output_root, raw_dir, xml_dir)
+        process_procedure_xml(Path(src_procedure_path), output_root, raw_dir, xml_dir)
     )
 
     ### guess language
-    lang = guess_language_by_filename(xml_dir)
+    lang = guess_language_by_filename(str(xml_dir))
 
     ### convert images
     images = process_images(
@@ -75,14 +74,14 @@ def parse_archive(
     )
 
     ### save conversion results as XML
-    xml_files.append(
-        process_conversion_results(xml_dir, images, output_root, xml_files)
-    )
+    # xml_files.append(
+    #    process_conversion_results(xml_dir, images, output_root, xml_files)
+    # )
 
     manifest = process_manifest(
         src_archive_path,
         src_procedure_path,
-        xml_dir,
+        str(xml_dir),
         xml_files,
         images,
     )
@@ -117,8 +116,7 @@ def process_archive(
         xml_path = xml_dir / filename
         xml_files.append(
             XmlFile(
-                path=xml_path.relative_to(output_root),
-                original_path=output_path.relative_to(output_root),
+                filename=filename,
                 sha256=generate_sha256(xml_path),
                 encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
             )
@@ -139,10 +137,10 @@ def process_procedure_xml(
 
     ### convert charset of procedure xml to UTF-8 and save to temp_xml_dir
     xml_path = Path(f"{xml_dir}/procedure.xml")
-    convert_xml_charset(src_procedure_path, xml_path)
+    convert_xml_charset(str(src_procedure_path), str(xml_path))
     return XmlFile(
-        path=xml_path.relative_to(output_root),
-        original_path=orig_xml_path.relative_to(output_root),
+        filename="procedure.xml",
+        original_filename=src_procedure_path.name,
         encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
         sha256=generate_sha256(xml_path),
     )
@@ -177,10 +175,13 @@ def process_images(
             )
 
             ### prepare DerivedImage entries
-            attributes = [attr.model_dump() for attr in param.attributes]
+            attributes = [
+                ImageAttributes(key=attr.key, value=attr.value)
+                for attr in param.attributes
+            ]
             derived_images.append(
                 DerivedImage(
-                    path=images_dir.relative_to(output_root) / new,
+                    filename=new,
                     sha256=generate_sha256(derived_image_path),
                     width=new_width,
                     height=new_height,
@@ -193,44 +194,27 @@ def process_images(
         if skip_ocr:
             ocr = None
         else:
-            ocr_text = ocr_image(image, lang=lang)
+            ocr_text = ocr_image(str(image), lang=lang)
             ocr_path = ocr_dir / (Path(image).stem + ".txt")
             with open(ocr_path, "w", encoding="utf-8") as f:
                 f.write(ocr_text)
             ocr = OcrInfo(
-                path=ocr_path.relative_to(output_root),
+                filename=ocr_path.name,
                 sha256=generate_sha256(ocr_path),
                 lang=lang,
             )
 
         images.append(
             ImageEntry(
-                id=Path(image).stem,
+                filename=image.name,
+                sha256=generate_sha256(raw_dir / image.name),
+                media_type=get_media_type(image.suffix),
                 kind=detect_image_kind(image.name),
-                original=OriginalImage(
-                    path=raw_dir.relative_to(output_root) / image.name,
-                    sha256=generate_sha256(raw_dir / image.name),
-                    media_type=get_media_type(image.suffix),
-                ),
                 derived=derived_images,
                 ocr=ocr,
             )
         )
     return images
-
-
-def process_conversion_results(
-    xml_dir: Path, images: list[ImageEntry], output_root: Path, xml_files: list[XmlFile]
-):
-    ### save conversion results as XML
-    xml_path = Path(f"{xml_dir}/image_conversion_results.xml")
-    save_as_xml(images, str(xml_path))
-    return XmlFile(
-        path=xml_path.relative_to(output_root),
-        original_path="None",
-        sha256=generate_sha256(xml_path),
-        encoding=EncodingInfo(detected="unknown", normalized_to="UTF-8"),
-    )
 
 
 def process_manifest(
@@ -250,10 +234,10 @@ def process_manifest(
             doc_id=generate_sha256(src_archive_path),
             sources=[
                 Source.create(
-                    Path(src_archive_path), sha256=generate_sha256(src_archive_path)
+                    src_archive_path, sha256=generate_sha256(src_archive_path)
                 ),
                 Source.create(
-                    Path(src_procedure_path), sha256=generate_sha256(src_procedure_path)
+                    src_procedure_path, sha256=generate_sha256(src_procedure_path)
                 ),
             ],
         ),
