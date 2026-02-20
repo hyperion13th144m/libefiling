@@ -168,7 +168,7 @@ manifest.json は、次の設計方針に基づいている。
     "kind": "figure",
     "derived": [
       {
-        "path": "JPOIMG0001-thumbnail.webp",
+        "filename": "JPOIMG0001-thumbnail.webp",
         "width": 300,
         "height": 300,
         "attributes": [
@@ -181,14 +181,9 @@ manifest.json は、次の設計方針に基づいている。
       }
     ],
     "ocr": {
-      "enabled": true,
-      "results": [
-        {
-          "path": "img-0001.txt",
-          "sha256": "...",
-          "lang": "jpn"
-        }
-      ]
+        "filename": "img-0001.txt",
+        "sha256": "...",
+        "lang": "jpn"
     }
   }
 ]

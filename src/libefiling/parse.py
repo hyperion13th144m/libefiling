@@ -3,9 +3,10 @@ from datetime import datetime
 from importlib.metadata import version as get_version
 from itertools import chain
 from pathlib import Path
+from typing import Iterator, List, Literal, Union, get_args
 
 from libefiling.archive.utils import generate_sha256
-from libefiling.image.kind import detect_image_kind
+from libefiling.image.kind import OCR_TARGET, detect_image_kind
 from libefiling.image.mediatype import get_media_type
 from libefiling.manifest import (
     DerivedImage,
@@ -34,7 +35,7 @@ def parse_archive(
     src_procedure_path: str,
     output_dir: str,
     image_params: list[ImageConvertParam] = defaultImageParams,
-    skip_ocr: bool = True,
+    ocr_target: List[OCR_TARGET] | None = None,
 ):
     """parse e-filing archive and generate various outputs."""
 
@@ -46,7 +47,7 @@ def parse_archive(
     if not output_root.exists():
         output_root.mkdir(parents=True, exist_ok=True)
 
-    extracted_archives = extract_archive(src_archive_path)
+    extracted_files = extract_archive(src_archive_path)
 
     ### create output subdirectories
     raw_dir = output_root / "raw"
@@ -57,27 +58,28 @@ def parse_archive(
         d.mkdir(parents=True, exist_ok=True)
 
     ### extract archive to raw_dir
+    save_raw_files(extracted_files, raw_dir)
+
     ### convert charset of extracted XML files to UTF-8 and save to xml_dir
-    xml_files = process_archive(extracted_archives, output_root, raw_dir, xml_dir)
+    raw_xml_files = raw_dir.glob("*.xml", case_sensitive=False)
+    xml_files = process_xml(raw_xml_files, xml_dir)
 
     ### convert charset of procedure xml to UTF-8 and save to xml_dir
-    xml_files.append(
-        process_procedure_xml(Path(src_procedure_path), output_root, raw_dir, xml_dir)
-    )
+    xml_files.append(process_procedure_xml(Path(src_procedure_path), xml_dir))
 
     ### guess language
     lang = guess_language_by_filename(str(xml_dir))
 
-    ### convert images
+    ### process images
+    src_images = chain(
+        Path(raw_dir).glob("*.tif", case_sensitive=False),
+        Path(raw_dir).glob("*.jpg", case_sensitive=False),
+    )
     images = process_images(
-        raw_dir, images_dir, ocr_dir, output_root, image_params, lang, skip_ocr
+        src_images, images_dir, ocr_dir, image_params, lang, ocr_target
     )
 
-    ### save conversion results as XML
-    # xml_files.append(
-    #    process_conversion_results(xml_dir, images, output_root, xml_files)
-    # )
-
+    # generate manifest
     manifest = process_manifest(
         src_archive_path,
         src_procedure_path,
@@ -86,38 +88,46 @@ def parse_archive(
         images,
     )
 
-    output_path = output_root / "manifest.json"
-    output_path.write_text(
+    manifest_path = output_root / "manifest.json"
+    manifest_path.write_text(
         manifest.model_dump_json(indent=4, ensure_ascii=False),
         encoding="utf-8",
     )
 
 
-def process_archive(
+def save_raw_files(
     extracted_archives: list[tuple[str, bytes]],
-    output_root: Path,
     raw_dir: Path,
-    xml_dir: Path,
-) -> list[XmlFile]:
-    xml_files = []
+) -> None:
     for filename, data in extracted_archives:
-        ### save extracted file to raw_dir
         output_path = raw_dir / filename
-        with open(output_path, "wb") as f:
+        with output_path.open("wb") as f:
             f.write(data)
 
-        if not filename.lower().endswith(".xml"):
-            continue
 
-        ### convert charset of xml file and save to xml_dir
-        convert_xml_charset(str(output_path), str(xml_dir / filename))
+def process_xml(
+    raw_xml_files: Iterator[Path],
+    xml_dir: Path,
+) -> list[XmlFile]:
+    """convert charset to UTF-8 and save to xml_dir,
+    and return list of XmlFile entries.
 
-        ### record xml file info
-        xml_path = xml_dir / filename
+    Args:
+        raw_xml_files (Iterator[Path]): Iterator of raw XML file paths.
+        xml_dir (Path): Directory to save converted XML files.
+
+    Returns:
+        list[XmlFile]: List of XmlFile entries.
+    """
+    xml_files = []
+    for file_path in raw_xml_files:
+        converted_xml_path = xml_dir / file_path.name
+        convert_xml_charset(str(file_path), str(converted_xml_path))
+
         xml_files.append(
             XmlFile(
-                filename=filename,
-                sha256=generate_sha256(xml_path),
+                filename=file_path.name,
+                sha256=generate_sha256(converted_xml_path),
                 encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
             )
         )
@@ -127,87 +137,43 @@ def process_archive(
 
 def process_procedure_xml(
     src_procedure_path: Path,
-    output_root: Path,
-    raw_dir: Path,
     xml_dir: Path,
+    filename: str = "procedure.xml",
 ) -> XmlFile:
-    ### copy original procedure xml to raw_dir
-    orig_xml_path = raw_dir / Path(src_procedure_path).name
-    shutil.copy(src_procedure_path, orig_xml_path)
-
-    ### convert charset of procedure xml to UTF-8 and save to temp_xml_dir
-    xml_path = Path(f"{xml_dir}/procedure.xml")
+    xml_path = xml_dir / filename
     convert_xml_charset(str(src_procedure_path), str(xml_path))
     return XmlFile(
-        filename="procedure.xml",
-        original_filename=src_procedure_path.name,
+        filename=filename,
         encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
         sha256=generate_sha256(xml_path),
     )
 
 
 def process_images(
-    raw_dir: Path,
+    image_files: chain[Path],
     images_dir: Path,
     ocr_dir: Path,
-    output_root: Path,
     image_params: list[ImageConvertParam],
     lang: str,
-    skip_ocr: bool = True,
+    ocr_target: List[OCR_TARGET] | None = None,
 ) -> list[ImageEntry]:
     images = []
-    src_images = chain(
-        Path(raw_dir).glob("*.tif", case_sensitive=False),
-        Path(raw_dir).glob("*.jpg", case_sensitive=False),
-    )
 
-    for image in src_images:
-        derived_images = []
-        for param in image_params:
-            suffix = param.suffix if param.suffix is not None else ""
-            format = param.format if param.format is not None else ".webp"
-            new = Path(image).stem + suffix + format
-            derived_image_path = images_dir / new
+    for image in image_files:
+        derived_images = convert_images(image, images_dir, image_params)
 
-            ### convert image and save to images_dir
-            new_width, new_height = convert_image(
-                image, derived_image_path, param.width, param.height
-            )
-
-            ### prepare DerivedImage entries
-            attributes = [
-                ImageAttributes(key=attr.key, value=attr.value)
-                for attr in param.attributes
-            ]
-            derived_images.append(
-                DerivedImage(
-                    filename=new,
-                    sha256=generate_sha256(derived_image_path),
-                    width=new_width,
-                    height=new_height,
-                    attributes=attributes,
-                    media_type=get_media_type(Path(new).suffix or ""),
-                )
-            )
-
-        ### perform OCR on image and save results as text
-        if skip_ocr:
-            ocr = None
+        if ocr_target is not None:
+            image_kind = detect_image_kind(image.name)
+            if image_kind in get_args(OCR_TARGET) or "ALL" in get_args(OCR_TARGET):
+                ocr = get_ocr_text(image, ocr_dir, lang)
+            else:
+                ocr = None
         else:
-            ocr_text = ocr_image(str(image), lang=lang)
-            ocr_path = ocr_dir / (Path(image).stem + ".txt")
-            with open(ocr_path, "w", encoding="utf-8") as f:
-                f.write(ocr_text)
-            ocr = OcrInfo(
-                filename=ocr_path.name,
-                sha256=generate_sha256(ocr_path),
-                lang=lang,
-            )
-
+            ocr = None
         images.append(
             ImageEntry(
                 filename=image.name,
-                sha256=generate_sha256(raw_dir / image.name),
+                sha256=generate_sha256(image),
                 media_type=get_media_type(image.suffix),
                 kind=detect_image_kind(image.name),
                 derived=derived_images,
@@ -215,6 +181,50 @@ def process_images(
             )
         )
     return images
+
+
+def convert_images(
+    image: Path, images_dir: Path, image_params: list[ImageConvertParam]
+) -> list[DerivedImage]:
+    derived_images = []
+    for param in image_params:
+        suffix = param.suffix if param.suffix is not None else ""
+        format = param.format if param.format is not None else ".webp"
+        new = Path(image).stem + suffix + format
+        derived_image_path = images_dir / new
+
+        ### convert image and save to images_dir
+        new_width, new_height = convert_image(
+            image, derived_image_path, param.width, param.height
+        )
+
+        ### prepare DerivedImage entries
+        attributes = [
+            ImageAttributes(key=attr.key, value=attr.value) for attr in param.attributes
+        ]
+        derived_images.append(
+            DerivedImage(
+                filename=new,
+                sha256=generate_sha256(derived_image_path),
+                width=new_width,
+                height=new_height,
+                attributes=attributes,
+                media_type=get_media_type(Path(new).suffix or ""),
+            )
+        )
+    return derived_images
+
+
+def get_ocr_text(image: Path, ocr_dir: Path, lang: str) -> OcrInfo:
+    ocr_text = ocr_image(str(image), lang=lang)
+    ocr_path = ocr_dir / (Path(image).stem + ".txt")
+    with open(ocr_path, "w", encoding="utf-8") as f:
+        f.write(ocr_text)
+    return OcrInfo(
+        filename=ocr_path.name,
+        sha256=generate_sha256(ocr_path),
+        lang=lang,
+    )
 
 
 def process_manifest(

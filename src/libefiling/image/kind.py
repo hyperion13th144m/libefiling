@@ -1,6 +1,13 @@
 import re
 from typing import Literal
 
+IMAGE_KIND = Literal[
+    "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
+]
+OCR_TARGET = Literal[
+    "chemical-formulas", "figures", "equations", "tables", "other-images", "ALL"
+]
+
 re_chemistry = re.compile(".+-appb-C[0-9]+")
 re_figure = re.compile(".+-(appb|jpdrab)-D[0-9]+")
 re_math = re.compile(".+-appb-M[0-9]+")
@@ -20,9 +27,7 @@ re_jpntce = re.compile("[0-9]+-jpntce-I[0-9]+")
 
 def detect_image_kind(
     image_name: str,
-) -> Literal[
-    "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
-]:
+) -> IMAGE_KIND:
     """detect image kind from image name
 
     Args:
