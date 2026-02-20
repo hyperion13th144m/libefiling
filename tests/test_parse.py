@@ -27,4 +27,6 @@ if __name__ == "__main__":
     # load_dotenv()
     # EXTRACT_SRC = os.environ.get("EXTRACT_SRC")
     # PROCEDURE_SRC = os.environ.get("PROCEDURE_SRC")
-    parse_archive(args.archive, args.procedure, args.out_dir)
+    parse_archive(
+        args.archive, args.procedure, args.out_dir, ocr_target=["other-images"]
+    )

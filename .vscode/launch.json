@@ -55,8 +55,22 @@
             "program": "tests/test_parse.py",
             "console": "integratedTerminal",
             "args": [
+                "${input:src_archive}",
+                "${input:src_proc}",
                 "output"
             ]
         },
+    ],
+    "inputs": [
+        {
+            "id": "src_archive",
+            "type": "promptString",
+            "description": "archive"
+        },
+        {
+            "id": "src_proc",
+            "type": "promptString",
+            "description": "proc"
+        }
     ]
 }

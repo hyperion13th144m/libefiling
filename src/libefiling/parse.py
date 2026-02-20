@@ -164,7 +164,7 @@ def process_images(
 
         if ocr_target is not None:
             image_kind = detect_image_kind(image.name)
-            if image_kind in get_args(OCR_TARGET) or "ALL" in get_args(OCR_TARGET):
+            if image_kind in ocr_target or "ALL" in ocr_target:
                 ocr = get_ocr_text(image, ocr_dir, lang)
             else:
                 ocr = None
