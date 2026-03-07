@@ -1,8 +1,6 @@
 import argparse
 import os
-import sys
-
-from dotenv import load_dotenv
+from importlib.metadata import version
 
 from libefiling import parse_archive
 
@@ -25,12 +23,21 @@ def main():
         "out_dir", type=str, help="Output directory for parsed files", default=os.curdir
     )
     parser.add_argument(
-        "--skip-ocr",
-        action="store_true",
-        help="Skip OCR processing",
+        "--ocr-target",
+        choices=[
+            "chemical-formulas",
+            "figures",
+            "equations",
+            "tables",
+            "other-images",
+            "ALL",
+        ],
+        help="Specify OCR target image kinds (default: None, which means no OCR)",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {version('libefiling')}"
     )
     args = parser.parse_args()
-    # load_dotenv()
-    # EXTRACT_SRC = os.environ.get("EXTRACT_SRC")
-    # PROCEDURE_SRC = os.environ.get("PROCEDURE_SRC")
-    parse_archive(args.archive, args.procedure, args.out_dir, skip_ocr=args.skip_ocr)
+    parse_archive(
+        args.archive, args.procedure, args.out_dir, ocr_target=args.ocr_target
+    )
