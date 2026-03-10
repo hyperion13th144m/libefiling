@@ -10,11 +10,30 @@ permissions:
   id-token: write
 
 jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches version
+        run: |
+          TAG=$(echo ${{ github.ref }} | sed 's|refs/tags/v||')
+          VERSION=$(grep '^version' pyproject.toml | cut -d'"' -f2)
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag version ($TAG) does not match pyproject.toml version ($VERSION)"
+            exit 1
+          fi
+          echo "✓ Version match confirmed: $VERSION"
+
   build-and-publish:
+    needs: validate-version
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/libefiling
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
