@@ -106,3 +106,8 @@ MIT ライセンス
 0.1.40
  - manifest の形式変更
    - xml, image の path を filename にした。
+
+0.1.49
+ - manifest の形式変更
+   - xml_files の kind を追加
+ - get_document_code 関数を追加
