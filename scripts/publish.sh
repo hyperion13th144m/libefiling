@@ -1,7 +1,7 @@
 #!/bin/sh
 
-poetry version patch
-poetry build
-poetry publish --repository pypi
+uv version --bump patch
+uv build
+uv publish
 
 

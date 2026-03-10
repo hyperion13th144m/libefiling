@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import List, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field
+
+from libefiling.image.kind import IMAGE_KIND
+from libefiling.xml.kind import XML_KIND
 
 # -------------------------
 # Generator / Document
@@ -86,6 +90,7 @@ class XmlFile(BaseModel):
     sha256: str
     encoding: EncodingInfo
     media_type: str = "application/xml"
+    kind: XML_KIND
 
 
 # -------------------------
@@ -121,9 +126,7 @@ class ImageEntry(BaseModel):
     filename: str
     sha256: str
     media_type: str = "image/tiff"
-    kind: Literal[
-        "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
-    ]
+    kind: IMAGE_KIND
     derived: List[DerivedImage] = []
     ocr: Optional[OcrInfo] = None
 
@@ -151,5 +154,7 @@ class Manifest(BaseModel):
     document: DocumentInfo
     paths: Paths = Paths()
     xml_files: List[XmlFile] = []
+    images: List[ImageEntry] = []
+    stats: Stats
     images: List[ImageEntry] = []
     stats: Stats

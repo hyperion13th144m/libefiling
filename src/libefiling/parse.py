@@ -21,6 +21,7 @@ from libefiling.manifest import (
     Stats,
     XmlFile,
 )
+from libefiling.xml.kind import detect_xml_kind
 
 from .archive.extract import extract_archive
 from .charset import convert_xml_charset
@@ -129,6 +130,7 @@ def process_xml(
                 filename=file_path.name,
                 sha256=generate_sha256(converted_xml_path),
                 encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
+                kind=detect_xml_kind(file_path.name),
             )
         )
 
@@ -146,6 +148,7 @@ def process_procedure_xml(
         filename=filename,
         encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
         sha256=generate_sha256(xml_path),
+        kind=detect_xml_kind(filename),
     )
 
 

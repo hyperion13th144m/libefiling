@@ -144,6 +144,7 @@ manifest.json は、次の設計方針に基づいている。
     "filename": "JPOXMLDOC01.xml",
     "original_filename": null,
     "sha256": "...",
+    "kind": "procedure",
     "encoding": {
       "detected": "Shift_JIS",
       "normalized_to": "UTF-8",
@@ -157,6 +158,7 @@ manifest.json は、次の設計方針に基づいている。
 - libefiling は XML の役割（請求項、明細書等）を 確定しない
 - 変換前の filename は raw_dirにある。変換後の filename は xml_dirにある
 - 変換前後で名前が変わっている場合は、変換前のファイル名を original_filename に記録する
+- kind は XML の種類を表す文字列. src/libefiling/xml/kind.py で定義されている値を使用する
 
 ### 4.6 images
 ```json
