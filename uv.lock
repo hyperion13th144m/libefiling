@@ -33,7 +33,7 @@ wheels = [
 
 [[package]]
 name = "libefiling"
-version = "0.1.49"
+version = "0.1.51"
 source = { editable = "." }
 dependencies = [
     { name = "asn1crypto" },

@@ -33,7 +33,7 @@ pip install libefiling
 
 ## 使い方
 ```python
-from libefiling import parse_archive, ImageConvertParam, generate_sha256, get_document_code
+from libefiling import parse_archive, ImageConvertParam, generate_sha256, get_document_code, get_doc_id
 
 params = [
     ImageConvertParam(
@@ -75,11 +75,13 @@ else:
     parse_archive(SRC, PROC, OUT, params, ocr_target)
 
 print(get_document_code("output/manifest.json"))
+print(get_doc_id("output/manifest.json"))
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
  - parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
 OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する
  - get_document_code は parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
+ - get_doc_id は parse_archive で生成された manifest.json のパスを与えると、doc_id を返す。
 
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報
@@ -111,3 +113,6 @@ MIT ライセンス
  - manifest の形式変更
    - xml_files の kind を追加
  - get_document_code 関数を追加
+
+0.1.51
+ - get_doc_id 関数を追加

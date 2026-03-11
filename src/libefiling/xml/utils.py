@@ -41,7 +41,6 @@ def get_document_code_from_procedure(procedure_path: str) -> str | None:
     code = elem.get("{http://www.jpo.go.jp}document-code")
     return code.strip() if code else None
 
-
 if __name__ == "__main__":
     import sys
 

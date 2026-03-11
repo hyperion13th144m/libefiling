@@ -158,3 +158,16 @@ class Manifest(BaseModel):
     stats: Stats
     images: List[ImageEntry] = []
     stats: Stats
+
+
+def get_doc_id(manifest_path: str) -> str | None:
+    """Get document ID from manifest file
+
+    Args:
+        manifest_path (str): manifest file path (e.g. manifest.json)
+    Returns:
+        str: document ID (e.g. 2024000000000)
+    """
+    mp = Path(manifest_path)
+    manifest = Manifest.model_validate_json(mp.read_text(encoding="utf-8"))
+    return manifest.document.doc_id.strip() if manifest.document.doc_id else None
