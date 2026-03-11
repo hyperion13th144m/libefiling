@@ -23,7 +23,10 @@ def convert_image(
 
 
 def convert(src: Path, width: int, height: int) -> Image.Image:
+    # multiprocessing環境下でのデッドロックを回避するため、
+    # 画像を開いた直後にload()を呼び出してファイルを閉じる
     image = Image.open(str(src))
+    image.load()  # 画像データをメモリに読み込み、ファイルを閉じる
 
     # convert a monochrome image to grayscale.
     if image.mode == "1":
