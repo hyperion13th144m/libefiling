@@ -1,10 +1,29 @@
+import os
+from importlib import import_module
 from pathlib import Path
 
 from PIL import Image, ImageOps
 
+try:
+    cykooz_module = import_module("cykooz_resizer")
+except ImportError:
+    cykooz_module = None
+
+if cykooz_module is not None:
+    FilterType = cykooz_module.FilterType
+    ResizeAlg = cykooz_module.ResizeAlg
+    ResizeOptions = cykooz_module.ResizeOptions
+    Resizer = cykooz_module.Resizer
+else:
+    FilterType = None
+    ResizeAlg = None
+    ResizeOptions = None
+    Resizer = None
+
 WHITE_THRESHOLD = 250
 FOREGROUND_LUT = [255 if value < WHITE_THRESHOLD else 0 for value in range(256)]
 REDUCING_GAP = 3.0
+RESIZER_BACKEND = os.environ.get("LIBEFILING_RESIZER_BACKEND", "pillow").lower()
 
 
 def convert_image(
@@ -51,16 +70,7 @@ def convert_prepared(image: Image.Image, width: int, height: int) -> Image.Image
 
     # resize
     resize_size = get_size(image, width, height)
-    if resize_size == image.size:
-        resized_image = image.copy()
-    else:
-        resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
-        reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
-        resized_image = image.resize(
-            resize_size,
-            resample=Image.Resampling.LANCZOS,
-            reducing_gap=reducing_gap,
-        )
+    resized_image = resize_image(image, resize_size)
 
     # expand image to fit given width and height.
     dw = width - resized_image.width if width > 0 else 0
@@ -85,6 +95,47 @@ def get_crop_box(image: Image.Image):
     grayscale = image if image.mode == "L" else image.convert("L")
     mask = grayscale.point(FOREGROUND_LUT, mode="1")
     return mask.getbbox()
+
+
+def resize_image(image: Image.Image, resize_size: tuple[int, int]) -> Image.Image:
+    if resize_size == image.size:
+        return image.copy()
+
+    if RESIZER_BACKEND in ("cykooz", "auto"):
+        resized = resize_with_cykooz(image, resize_size)
+        if resized is not None:
+            return resized
+
+    resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
+    reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
+    return image.resize(
+        resize_size,
+        resample=Image.Resampling.LANCZOS,
+        reducing_gap=reducing_gap,
+    )
+
+
+def resize_with_cykooz(
+    image: Image.Image, resize_size: tuple[int, int]
+) -> Image.Image | None:
+    if (
+        Resizer is None
+        or ResizeOptions is None
+        or ResizeAlg is None
+        or FilterType is None
+    ):
+        return None
+
+    try:
+        dst_image = Image.new(image.mode, resize_size)
+        resizer = Resizer()
+        options = ResizeOptions(
+            resize_alg=ResizeAlg.convolution(FilterType.lanczos3),
+        )
+        resizer.resize_pil(image, dst_image, options)
+        return dst_image
+    except Exception:
+        return None
 
 
 def get_size(image: Image.Image, width: int, height: int):

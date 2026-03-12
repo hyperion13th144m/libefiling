@@ -1,9 +1,9 @@
+import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from importlib.metadata import version as get_version
 from itertools import chain
-import os
 from pathlib import Path
 from typing import Iterable, Iterator, List, Literal, Union, get_args
 

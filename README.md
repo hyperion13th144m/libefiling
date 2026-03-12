@@ -72,20 +72,50 @@ doc_id = generate_sha256(SRC)
 if doc_id === '...':
     print("Already processed")
 else:
-    parse_archive(SRC, PROC, OUT, params, ocr_target)
+  parse_archive(
+    SRC,
+    PROC,
+    OUT,
+    params,
+    ocr_target,
+    image_max_workers=0,  # 0: CPU数に応じて自動
+  )
 
 print(get_document_code("output/manifest.json"))
 print(get_doc_id("output/manifest.json"))
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
  - parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
-OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する. 第6引数は並列オプション。
-   - max_workers が None のとき: 従来どおりシリアル実行
-   - max_workers が 1 のとき: シリアル実行
-   - max_workers が 2 以上のとき: スレッド並列実行
-   - max_workers が 0 のとき: CPU数ベースで自動設定
+OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する。第6引数 image_max_workers は画像処理の並列オプション。
+  - image_max_workers が None のとき: 従来どおりシリアル実行
+  - image_max_workers が 1 のとき: シリアル実行
+  - image_max_workers が 2 以上のとき: スレッド並列実行
+  - image_max_workers が 0 のとき: CPU数ベースで自動設定
  - get_document_code は parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
  - get_doc_id は parse_archive で生成された manifest.json のパスを与えると、doc_id を返す。
+
+### 画像変換の高速化オプション
+既定では Pillow でリサイズします。環境変数 LIBEFILING_RESIZER_BACKEND を指定すると、
+cykooz_resizer が利用可能な環境ではそちらを使い、利用できなければ Pillow に自動フォールバックします。
+
+```bash
+# 既定(明示): Pillow
+export LIBEFILING_RESIZER_BACKEND=pillow
+
+# cykooz_resizer を優先(未導入/失敗時は Pillow にフォールバック)
+export LIBEFILING_RESIZER_BACKEND=cykooz
+
+# auto も同様に cykooz_resizer を優先
+export LIBEFILING_RESIZER_BACKEND=auto
+```
+
+cykooz_resizer を使う場合:
+
+```bash
+pip install cykooz_resizer
+```
+
+注: cykooz_resizer は Rust ツールチェーンが必要です。環境によってはビルドできない場合があります。
 
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報
