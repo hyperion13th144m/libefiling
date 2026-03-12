@@ -1,9 +1,11 @@
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from importlib.metadata import version as get_version
 from itertools import chain
+import os
 from pathlib import Path
-from typing import Iterator, List, Literal, Union, get_args
+from typing import Iterable, Iterator, List, Literal, Union, get_args
 
 from libefiling.archive.utils import generate_sha256
 from libefiling.image.kind import OCR_TARGET, detect_image_kind
@@ -37,6 +39,7 @@ def parse_archive(
     output_dir: str,
     image_params: list[ImageConvertParam] = defaultImageParams,
     ocr_target: List[OCR_TARGET] | None = None,
+    image_max_workers: int | None = None,
 ):
     """parse e-filing archive and generate various outputs."""
 
@@ -77,7 +80,13 @@ def parse_archive(
         Path(raw_dir).glob("*.jpg", case_sensitive=False),
     )
     images = process_images(
-        src_images, images_dir, ocr_dir, image_params, lang, ocr_target
+        src_images,
+        images_dir,
+        ocr_dir,
+        image_params,
+        lang,
+        ocr_target,
+        max_workers=image_max_workers,
     )
 
     # generate manifest
@@ -153,37 +162,71 @@ def process_procedure_xml(
 
 
 def process_images(
-    image_files: chain[Path],
+    image_files: Iterable[Path],
     images_dir: Path,
     ocr_dir: Path,
     image_params: list[ImageConvertParam],
     lang: str,
     ocr_target: List[OCR_TARGET] | None = None,
+    max_workers: int | None = None,
 ) -> list[ImageEntry]:
-    images = []
+    image_list = list(image_files)
+    if not image_list:
+        return []
 
-    for image in image_files:
-        derived_images = convert_images(image, images_dir, image_params)
+    workers = _resolve_worker_count(max_workers)
+    if workers <= 1 or len(image_list) == 1:
+        return [
+            _process_single_image(image, images_dir, ocr_dir, image_params, lang, ocr_target)
+            for image in image_list
+        ]
 
-        if ocr_target is not None:
-            image_kind = detect_image_kind(image.name)
-            if image_kind in ocr_target or "ALL" in ocr_target:
-                ocr = get_ocr_text(image, ocr_dir, lang)
-            else:
-                ocr = None
-        else:
-            ocr = None
-        images.append(
-            ImageEntry(
-                filename=image.name,
-                sha256=generate_sha256(image),
-                media_type=get_media_type(image.suffix),
-                kind=detect_image_kind(image.name),
-                derived=derived_images,
-                ocr=ocr,
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        return list(
+            executor.map(
+                lambda image: _process_single_image(
+                    image, images_dir, ocr_dir, image_params, lang, ocr_target
+                ),
+                image_list,
             )
         )
-    return images
+
+
+def _resolve_worker_count(max_workers: int | None) -> int:
+    if max_workers is None:
+        return 1
+    if max_workers == 0:
+        return min(32, os.cpu_count() or 1)
+    return max(1, max_workers)
+
+
+def _process_single_image(
+    image: Path,
+    images_dir: Path,
+    ocr_dir: Path,
+    image_params: list[ImageConvertParam],
+    lang: str,
+    ocr_target: List[OCR_TARGET] | None,
+) -> ImageEntry:
+    derived_images = convert_images(image, images_dir, image_params)
+
+    if ocr_target is not None:
+        image_kind = detect_image_kind(image.name)
+        if image_kind in ocr_target or "ALL" in ocr_target:
+            ocr = get_ocr_text(image, ocr_dir, lang)
+        else:
+            ocr = None
+    else:
+        ocr = None
+
+    return ImageEntry(
+        filename=image.name,
+        sha256=generate_sha256(image),
+        media_type=get_media_type(image.suffix),
+        kind=detect_image_kind(image.name),
+        derived=derived_images,
+        ocr=ocr,
+    )
 
 
 def convert_images(

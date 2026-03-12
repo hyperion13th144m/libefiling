@@ -79,7 +79,11 @@ print(get_doc_id("output/manifest.json"))
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
  - parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
-OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する
+OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する. 第6引数は並列オプション。
+   - max_workers が None のとき: 従来どおりシリアル実行
+   - max_workers が 1 のとき: シリアル実行
+   - max_workers が 2 以上のとき: スレッド並列実行
+   - max_workers が 0 のとき: CPU数ベースで自動設定
  - get_document_code は parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
  - get_doc_id は parse_archive で生成された manifest.json のパスを与えると、doc_id を返す。
 
