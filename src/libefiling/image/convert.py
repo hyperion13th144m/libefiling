@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageOps
+from PIL import Image, ImageOps
+
+WHITE_THRESHOLD = 250
+FOREGROUND_LUT = [255 if value < WHITE_THRESHOLD else 0 for value in range(256)]
+REDUCING_GAP = 3.0
 
 
 def convert_image(
@@ -16,13 +20,18 @@ def convert_image(
     """
 
     ### 画像変換の実行
-    converted_image = convert(src_image, width, height)
+    prepared_image = load_image(src_image)
+    converted_image = convert_prepared(prepared_image, width, height)
     converted_image.save(dst_image)
 
     return (converted_image.width, converted_image.height)
 
 
 def convert(src: Path, width: int, height: int) -> Image.Image:
+    return convert_prepared(load_image(src), width, height)
+
+
+def load_image(src: Path) -> Image.Image:
     # multiprocessing環境下でのデッドロックを回避するため、
     # 画像を開いた直後にload()を呼び出してファイルを閉じる
     image = Image.open(str(src))
@@ -33,11 +42,25 @@ def convert(src: Path, width: int, height: int) -> Image.Image:
         image = image.convert("L")
 
     # remove margins
-    image = crop(image)
+    return crop(image)
+
+
+def convert_prepared(image: Image.Image, width: int, height: int) -> Image.Image:
+    if width == 0 and height == 0:
+        raise ValueError("width and height cannot both be zero")
 
     # resize
     resize_size = get_size(image, width, height)
-    resized_image = image.resize(resize_size, resample=Image.Resampling.LANCZOS)
+    if resize_size == image.size:
+        resized_image = image.copy()
+    else:
+        resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
+        reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
+        resized_image = image.resize(
+            resize_size,
+            resample=Image.Resampling.LANCZOS,
+            reducing_gap=reducing_gap,
+        )
 
     # expand image to fit given width and height.
     dw = width - resized_image.width if width > 0 else 0
@@ -51,19 +74,17 @@ def convert(src: Path, width: int, height: int) -> Image.Image:
 
 
 def crop(image: Image.Image):
-    # background image
-    bg = Image.new(image.mode, image.size, 255)  # image.getpixel((0, 0)))
+    crop_box = get_crop_box(image)
+    if crop_box is None or crop_box == (0, 0, image.width, image.height):
+        return image
 
-    # difference original image and background image.
-    diff = ImageChops.difference(image, bg)
-    # diff = diff.filter(ImageFilter.MedianFilter(5))  too slow
-    # diff = diff.point(lambda p: 255 if p > 160 else 0)
+    return image.crop(crop_box)
 
-    # detect boundary to background color
-    croprange = diff.getbbox()
-    crop_image = image.crop(croprange)
 
-    return crop_image
+def get_crop_box(image: Image.Image):
+    grayscale = image if image.mode == "L" else image.convert("L")
+    mask = grayscale.point(FOREGROUND_LUT, mode="1")
+    return mask.getbbox()
 
 
 def get_size(image: Image.Image, width: int, height: int):

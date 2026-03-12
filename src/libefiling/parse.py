@@ -26,7 +26,7 @@ from libefiling.xml.kind import detect_xml_kind
 from .archive.extract import extract_archive
 from .charset import convert_xml_charset
 from .default_config import defaultImageParams
-from .image.convert import convert_image
+from .image.convert import convert_prepared, load_image
 from .image.ocr import guess_language_by_filename, ocr_image
 from .image.params import ImageConvertParam
 
@@ -190,6 +190,7 @@ def convert_images(
     image: Path, images_dir: Path, image_params: list[ImageConvertParam]
 ) -> list[DerivedImage]:
     derived_images = []
+    prepared_image = load_image(image)
     for param in image_params:
         suffix = param.suffix if param.suffix is not None else ""
         format = param.format if param.format is not None else ".webp"
@@ -197,9 +198,9 @@ def convert_images(
         derived_image_path = images_dir / new
 
         ### convert image and save to images_dir
-        new_width, new_height = convert_image(
-            image, derived_image_path, param.width, param.height
-        )
+        converted_image = convert_prepared(prepared_image, param.width, param.height)
+        converted_image.save(derived_image_path)
+        new_width, new_height = converted_image.width, converted_image.height
 
         ### prepare DerivedImage entries
         attributes = [
