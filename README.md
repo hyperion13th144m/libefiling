@@ -105,7 +105,11 @@ export LIBEFILING_RESIZER_BACKEND=pillow
 # cykooz_resizer を優先(未導入/失敗時は Pillow にフォールバック)
 export LIBEFILING_RESIZER_BACKEND=cykooz
 
-# auto も同様に cykooz_resizer を優先
+# 既定(明示): Pillow-simd
+export LIBEFILING_RESIZER_BACKEND=pillow-simd
+
+
+# auto も同様に cykooz_resizer, pillow-simd の順に優先
 export LIBEFILING_RESIZER_BACKEND=auto
 ```
 
@@ -115,7 +119,14 @@ cykooz_resizer を使う場合:
 pip install cykooz_resizer
 ```
 
+pillow-simd を使う場合:
+
+```bash
+pip install pillow-simd
+```
+
 注: cykooz_resizer は Rust ツールチェーンが必要です。環境によってはビルドできない場合があります。
+pillow-simd は [prerequistes](https://pillow.readthedocs.io/en/stable/installation/building-from-source.html#building-from-source) が必要です。
 
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報

@@ -1,3 +1,4 @@
+import importlib.metadata
 import os
 from importlib import import_module
 from pathlib import Path
@@ -19,6 +20,12 @@ else:
     ResizeAlg = None
     ResizeOptions = None
     Resizer = None
+
+try:
+    importlib.metadata.version("pillow-simd")
+    _pillow_simd_available = True
+except importlib.metadata.PackageNotFoundError:
+    _pillow_simd_available = False
 
 WHITE_THRESHOLD = 250
 FOREGROUND_LUT = [255 if value < WHITE_THRESHOLD else 0 for value in range(256)]
@@ -106,6 +113,11 @@ def resize_image(image: Image.Image, resize_size: tuple[int, int]) -> Image.Imag
         if resized is not None:
             return resized
 
+    if RESIZER_BACKEND in ("pillow-simd", "auto"):
+        resized = resize_with_pillow_simd(image, resize_size)
+        if resized is not None:
+            return resized
+
     resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
     reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
     return image.resize(
@@ -134,6 +146,27 @@ def resize_with_cykooz(
         )
         resizer.resize_pil(image, dst_image, options)
         return dst_image
+    except Exception:
+        return None
+
+
+def resize_with_pillow_simd(
+    image: Image.Image, resize_size: tuple[int, int]
+) -> Image.Image | None:
+    if not _pillow_simd_available:
+        return None
+
+    try:
+        # pillow-simd は Pillow と同一 API だが SSE4/AVX2 SIMD で高速化される
+        # 古いバージョンは Image.Resampling が存在しない場合がある
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:
+            resample = Image.ANTIALIAS  # type: ignore[attr-defined]
+
+        resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
+        reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
+        return image.resize(resize_size, resample=resample, reducing_gap=reducing_gap)
     except Exception:
         return None
 
