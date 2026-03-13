@@ -15,7 +15,6 @@ COMMON_DEPS = [
     "asn1crypto>=1.5.1,<2.0.0",
     "pytesseract>=0.3.13,<0.4.0",
     "pydantic>=2.12.5,<3.0.0",
-    "dotenv>=0.9.9,<0.10.0",
 ]
 
 ENV_SPECS = [

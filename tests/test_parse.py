@@ -1,8 +1,5 @@
 import argparse
 import os
-import sys
-
-from dotenv import load_dotenv
 
 from libefiling import parse_archive
 
@@ -24,9 +21,6 @@ if __name__ == "__main__":
         "out_dir", type=str, help="Output directory for parsed files", default=os.curdir
     )
     args = parser.parse_args()
-    # load_dotenv()
-    # EXTRACT_SRC = os.environ.get("EXTRACT_SRC")
-    # PROCEDURE_SRC = os.environ.get("PROCEDURE_SRC")
     parse_archive(
         args.archive, args.procedure, args.out_dir, ocr_target=["other-images"]
     )
