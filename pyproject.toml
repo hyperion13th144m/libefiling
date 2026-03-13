@@ -1,6 +1,6 @@
 [project]
 name = "libefiling"
-version = "0.1.57"
+version = "0.1.58"
 description = "A Python library for e-filing systems."
 authors = [{ name = "hyperion13th144m", email = "hyperion13th144m@gmail.com" }]
 requires-python = ">=3.12"
@@ -17,7 +17,7 @@ dependencies = [
     "pytesseract (>=0.3.13,<0.4.0)",
     "pydantic (>=2.12.5,<3.0.0)",
     "dotenv (>=0.9.9,<0.10.0)",
-    "pillow-simd>=9.5.0.post2",
+    "pillow>=12.1.1",
 ]
 
 [project.urls]

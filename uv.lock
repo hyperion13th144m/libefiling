@@ -33,12 +33,12 @@ wheels = [
 
 [[package]]
 name = "libefiling"
-version = "0.1.57"
+version = "0.1.58"
 source = { editable = "." }
 dependencies = [
     { name = "asn1crypto" },
     { name = "dotenv" },
-    { name = "pillow-simd" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pytesseract" },
 ]
@@ -47,7 +47,7 @@ dependencies = [
 requires-dist = [
     { name = "asn1crypto", specifier = ">=1.5.1,<2.0.0" },
     { name = "dotenv", specifier = ">=0.9.9,<0.10.0" },
-    { name = "pillow-simd", specifier = ">=9.5.0.post2" },
+    { name = "pillow", specifier = ">=12.1.1" },
     { name = "pydantic", specifier = ">=2.12.5,<3.0.0" },
     { name = "pytesseract", specifier = ">=0.3.13,<0.4.0" },
 ]
@@ -129,12 +129,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f3/ca/cbce2327eb9885476b3957b2e82eb12c866a8b16ad77392864ad601022ce/pillow-12.1.1-cp314-cp314t-win_amd64.whl", hash = "sha256:4ceb838d4bd9dab43e06c363cab2eebf63846d6a4aeaea283bbdfd8f1a8ed58b", size = 7182894, upload-time = "2026-02-11T04:22:48.114Z" },
     { url = "https://files.pythonhosted.org/packages/ec/d2/de599c95ba0a973b94410477f8bf0b6f0b5e67360eb89bcb1ad365258beb/pillow-12.1.1-cp314-cp314t-win_arm64.whl", hash = "sha256:7b03048319bfc6170e93bd60728a1af51d3dd7704935feb228c4d4faab35d334", size = 2546446, upload-time = "2026-02-11T04:22:50.342Z" },
 ]
-
-[[package]]
-name = "pillow-simd"
-version = "9.5.0.post2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d0/d9/5cf8d7c9ecaf389fe62570a5287036611f1328796ed6e59abbc2dc09f4a6/Pillow-SIMD-9.5.0.post2.tar.gz", hash = "sha256:39dfb027bdaa3e35597df9a1c42ea97091f32bc83f25ab9cab0845b3c4bad331", size = 904623, upload-time = "2024-09-23T18:27:59.716Z" }
 
 [[package]]
 name = "pydantic"
