@@ -1,6 +1,6 @@
 [project]
 name = "libefiling"
-version = "0.1.55"
+version = "0.1.56"
 description = "A Python library for e-filing systems."
 authors = [{ name = "hyperion13th144m", email = "hyperion13th144m@gmail.com" }]
 requires-python = ">=3.12"
