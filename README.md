@@ -128,6 +128,8 @@ pip install pillow-simd
 注: cykooz_resizer は Rust ツールチェーンが必要です。環境によってはビルドできない場合があります。
 pillow-simd は [prerequistes](https://pillow.readthedocs.io/en/stable/installation/building-from-source.html#building-from-source) が必要です。
 
+手元で試した限りでは、pillow, pillow-simd, cykooz_resizer であまり差が出なかった。
+
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報
  - raw/ : SRC に含まれてたファイルが展展されてる。
