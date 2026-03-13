@@ -128,6 +128,8 @@ pip install pillow-simd
 注: cykooz_resizer は Rust ツールチェーンが必要です。環境によってはビルドできない場合があります。
 pillow-simd は [prerequistes](https://pillow.readthedocs.io/en/stable/installation/building-from-source.html#building-from-source) が必要です。
 
+手元で試した限りでは、pillow, pillow-simd, cykooz_resizer であまり差が出なかった。
+
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報
  - raw/ : SRC に含まれてたファイルが展展されてる。
@@ -161,3 +163,12 @@ MIT ライセンス
 
 0.1.51
  - get_doc_id 関数を追加
+
+0.1.54
+ - 画像リサイズをスレッド化した。
+ 
+0.1.55
+ - 画像リサイズのために cykooze_resizer を選択できるようにした。
+
+0.1.56
+ - 画像リサイズのために pillow-simd を選択できるようにした。
