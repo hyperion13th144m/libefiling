@@ -159,10 +159,7 @@ def resize_with_pillow_simd(
     try:
         # pillow-simd は Pillow と同一 API だが SSE4/AVX2 SIMD で高速化される
         # 古いバージョンは Image.Resampling が存在しない場合がある
-        try:
-            resample = Image.Resampling.LANCZOS
-        except AttributeError:
-            resample = Image.ANTIALIAS  # type: ignore[attr-defined]
+        resample = Image.Resampling.BICUBIC
 
         resize_ratio = max(image.width / resize_size[0], image.height / resize_size[1])
         reducing_gap = REDUCING_GAP if resize_ratio > 1 else None
