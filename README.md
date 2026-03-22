@@ -81,7 +81,7 @@ else:
     image_max_workers=0,  # 0: CPU数に応じて自動
   )
 
-print(get_document_code("output/manifest.json"))
+print(get_document_code(SRC))
 print(get_doc_id("output/manifest.json"))
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
@@ -91,7 +91,7 @@ OUT に各種ファイルが展開される。第5引数はOCR処理対象の画
   - image_max_workers が 1 のとき: シリアル実行
   - image_max_workers が 2 以上のとき: スレッド並列実行
   - image_max_workers が 0 のとき: CPU数ベースで自動設定
- - get_document_code は parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
+ - get_document_code は アーカイブのパス名か、parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
  - get_doc_id は parse_archive で生成された manifest.json のパスを与えると、doc_id を返す。
 
 ### 画像変換の高速化オプション

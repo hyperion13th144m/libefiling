@@ -57,6 +57,7 @@ class Source(BaseModel):
 
 class DocumentInfo(BaseModel):
     doc_id: str
+    code: str
     sources: List[Source]
 
 

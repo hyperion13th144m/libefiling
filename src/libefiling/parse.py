@@ -1,11 +1,11 @@
 import os
-import shutil
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from importlib.metadata import version as get_version
 from itertools import chain
 from pathlib import Path
-from typing import Iterable, Iterator, List, Literal, Union, get_args
+from typing import Iterable, Iterator, List
+from xml.etree import ElementTree as ET
 
 from libefiling.archive.utils import generate_sha256
 from libefiling.image.kind import OCR_TARGET, detect_image_kind
@@ -89,6 +89,8 @@ def parse_archive(
         max_workers=image_max_workers,
     )
 
+    code = get_document_code_from_procedure(str(xml_dir / "procedure.xml"))
+
     # generate manifest
     manifest = process_manifest(
         src_archive_path,
@@ -96,6 +98,7 @@ def parse_archive(
         str(xml_dir),
         xml_files,
         images,
+        code=code if code else "UNKNOWN",
     )
 
     manifest_path = output_root / "manifest.json"
@@ -280,6 +283,7 @@ def process_manifest(
     xml_dir: str,
     xml_files: list[XmlFile],
     images: list[ImageEntry],
+    code: str,
 ) -> Manifest:
     manifest = Manifest(
         generator=GeneratorInfo(
@@ -289,6 +293,7 @@ def process_manifest(
         ),
         document=DocumentInfo(
             doc_id=generate_sha256(src_archive_path),
+            code=code,
             sources=[
                 Source.create(
                     src_archive_path, sha256=generate_sha256(src_archive_path)
@@ -309,3 +314,22 @@ def process_manifest(
     )
 
     return manifest
+
+def get_document_code_from_procedure(procedure_path: str) -> str | None:
+    """Get document code from procedure.xml file path
+
+    Args:
+        procedure_path (str): procedure.xml file path
+    Returns:
+        str: document code (e.g. A163) or None if not found
+    """
+    ns = {"jp": "http://www.jpo.go.jp"}
+    tree = ET.parse(procedure_path)
+    elem = tree.find(".//jp:document-name", ns)
+    if elem is None:
+        return None
+
+    # Namespaced attributes are stored as expanded QName keys.
+    code = elem.get("{http://www.jpo.go.jp}document-code")
+    return code.strip() if code else None
+

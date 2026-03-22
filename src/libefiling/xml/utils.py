@@ -1,45 +1,46 @@
-from pathlib import Path
-from xml.etree import ElementTree as ET
-
 from libefiling.manifest import Manifest
 
 
-def get_document_code(manifest_path: str) -> str | None:
-    """Get document code from manifest file
+def get_document_code(file_path: str) -> str | None:
+    """Get document code from manifest, archive or procedure file
 
     Args:
-        manifest_path (str): manifest file path (e.g. manifest.json)
+        file_path (str): manifest, archive or procedure file path
     Returns:
-        str: document code (e.g. A163)
+        str: document code (e.g. A163) or None if not found
     """
-    mp = Path(manifest_path)
-    manifest = Manifest.model_validate_json(mp.read_text(encoding="utf-8"))
-    manifest_dir = mp.parent
-    xml_dir = manifest_dir / manifest.paths.xml_dir
-    for xml in manifest.xml_files:
-        if xml.kind == "procedure":
-            return get_document_code_from_procedure(str(xml_dir / xml.filename))
+    if file_path.endswith("manifest.json"):
+        return get_document_code_from_manifest(file_path)
     else:
-        return None
+        return get_document_code_from_filename(file_path)
 
 
-def get_document_code_from_procedure(procedure_path: str) -> str | None:
-    """Get document code from procedure.xml file path
+def get_document_code_from_manifest(manifest_path: str) -> str | None:
+    """Get document code from manifest file path
 
     Args:
-        procedure_path (str): procedure.xml file path
+        manifest_path (str): manifest file path
     Returns:
-        str: document code (e.g. A163)
+        str: document code (e.g. A163) or None if not found
     """
-    ns = {"jp": "http://www.jpo.go.jp"}
-    tree = ET.parse(procedure_path)
-    elem = tree.find(".//jp:document-name", ns)
-    if elem is None:
-        return None
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = Manifest.model_validate(f.read())
+    return manifest.document.code if manifest.document.code else None
 
-    # Namespaced attributes are stored as expanded QName keys.
-    code = elem.get("{http://www.jpo.go.jp}document-code")
-    return code.strip() if code else None
+
+
+def get_document_code_from_filename(file_path: str) -> str | None:
+    """Get document code from archive file name
+
+    Args:
+        file_path (str): archive file path
+    Returns:
+        str: document code (e.g. A163) or None if not found
+    """
+    if len(file_path) < 29:
+        return None
+    else:
+        return file_path[20:20 + 9].replace("_", "").strip()
 
 if __name__ == "__main__":
     import sys
