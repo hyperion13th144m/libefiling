@@ -172,3 +172,7 @@ MIT ライセンス
 
 0.1.56
  - 画像リサイズのために pillow-simd を選択できるようにした。
+
+0.1.60
+ - get_document_code 関数は、manifest.jsonだけでなく、アーカイブパス・手続ファイルを与えても文書コードを返すようにした。
+ - manifest.json に 文書コードを含めた
