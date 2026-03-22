@@ -75,6 +75,7 @@ manifest.json は、次の設計方針に基づいている。
 ```json
 "document": {
   "doc_id": "D000001",
+  "code": "A163",
   "sources": [
     {
     "filename": "...AAA.JWX",
@@ -97,6 +98,7 @@ manifest.json は、次の設計方針に基づいている。
 ```
 
 - doc_id は、この文書単位を一意に識別するためのID
+- code は、文書の分類コード
 - source は基になったファイルに関する情報
 - archive_sha256 は再処理判定や追跡用
 - task, kind, extension はファイル名から得られるアーカイブの属する業務、種類、拡張子
