@@ -23,6 +23,7 @@ XML_KIND = Literal[
     "special-attached-documents",
     "special-st26-sequence-list",
     "procedure",
+    "source",
     "unknown",
 ]
 
@@ -138,6 +139,11 @@ re_xml: list[XML_RE_MAP] = [
         "kind": "procedure",
         "regex": re.compile(r"procedure\.xml"),
         "description": "procedure XML procedure.xml",
+    },
+    {
+        "kind": "source",
+        "regex": re.compile(r"source\.xml"),
+        "description": "source XML source.xml",
     },
 ]
 

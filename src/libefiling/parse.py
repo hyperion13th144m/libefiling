@@ -5,14 +5,12 @@ from importlib.metadata import version as get_version
 from itertools import chain
 from pathlib import Path
 from typing import Iterable, Iterator, List
-from xml.etree import ElementTree as ET
 
 from libefiling.archive.utils import generate_sha256
 from libefiling.image.kind import OCR_TARGET, detect_image_kind
 from libefiling.image.mediatype import get_media_type
 from libefiling.manifest import (
     DerivedImage,
-    DocumentInfo,
     EncodingInfo,
     GeneratorInfo,
     ImageAttributes,
@@ -20,6 +18,7 @@ from libefiling.manifest import (
     Manifest,
     OcrInfo,
     Source,
+    Sources,
     Stats,
     XmlFile,
 )
@@ -69,7 +68,8 @@ def parse_archive(
     xml_files = process_xml(raw_xml_files, xml_dir)
 
     ### convert charset of procedure xml to UTF-8 and save to xml_dir
-    xml_files.append(process_procedure_xml(Path(src_procedure_path), xml_dir))
+    proc_xml_path = xml_dir / "procedure.xml"
+    xml_files.append(process_procedure_xml(Path(src_procedure_path), proc_xml_path))
 
     ### guess language
     lang = guess_language_by_filename(str(xml_dir))
@@ -89,16 +89,24 @@ def parse_archive(
         max_workers=image_max_workers,
     )
 
-    code = get_document_code_from_procedure(str(xml_dir / "procedure.xml"))
+    ### generate sources.xml
+    source_archive = Source.create(src_archive_path)
+    source_proc = Source.create(src_procedure_path)
+    sources = Sources(
+        document_code=source_archive.get_document_code(),
+        archive=source_archive,
+        procedure=source_proc,
+    )
+    sources_xml_path = str(xml_dir / "sources.xml")
+    sources.save_as_xml(sources_xml_path)
+    xml_files.append(sources.to_xml_file(sources_xml_path))
 
     # generate manifest
     manifest = process_manifest(
-        src_archive_path,
-        src_procedure_path,
+        sources,
         str(xml_dir),
         xml_files,
         images,
-        code=code if code else "UNKNOWN",
     )
 
     manifest_path = output_root / "manifest.json"
@@ -151,16 +159,14 @@ def process_xml(
 
 def process_procedure_xml(
     src_procedure_path: Path,
-    xml_dir: Path,
-    filename: str = "procedure.xml",
+    xml_path: Path,
 ) -> XmlFile:
-    xml_path = xml_dir / filename
     convert_xml_charset(str(src_procedure_path), str(xml_path))
     return XmlFile(
-        filename=filename,
+        filename=xml_path.name,
         encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
         sha256=generate_sha256(xml_path),
-        kind=detect_xml_kind(filename),
+        kind=detect_xml_kind(xml_path.name),
     )
 
 
@@ -180,7 +186,9 @@ def process_images(
     workers = _resolve_worker_count(max_workers)
     if workers <= 1 or len(image_list) == 1:
         return [
-            _process_single_image(image, images_dir, ocr_dir, image_params, lang, ocr_target)
+            _process_single_image(
+                image, images_dir, ocr_dir, image_params, lang, ocr_target
+            )
             for image in image_list
         ]
 
@@ -278,12 +286,10 @@ def get_ocr_text(image: Path, ocr_dir: Path, lang: str) -> OcrInfo:
 
 
 def process_manifest(
-    src_archive_path: str,
-    src_procedure_path: str,
+    sources: Sources,
     xml_dir: str,
     xml_files: list[XmlFile],
     images: list[ImageEntry],
-    code: str,
 ) -> Manifest:
     manifest = Manifest(
         generator=GeneratorInfo(
@@ -291,18 +297,7 @@ def process_manifest(
             version=get_version("libefiling"),
             created_at=datetime.now(),
         ),
-        document=DocumentInfo(
-            doc_id=generate_sha256(src_archive_path),
-            code=code,
-            sources=[
-                Source.create(
-                    src_archive_path, sha256=generate_sha256(src_archive_path)
-                ),
-                Source.create(
-                    src_procedure_path, sha256=generate_sha256(src_procedure_path)
-                ),
-            ],
-        ),
+        sources=sources,
         xml_files=xml_files,
         images=images,
         stats=Stats(
@@ -314,22 +309,3 @@ def process_manifest(
     )
 
     return manifest
-
-def get_document_code_from_procedure(procedure_path: str) -> str | None:
-    """Get document code from procedure.xml file path
-
-    Args:
-        procedure_path (str): procedure.xml file path
-    Returns:
-        str: document code (e.g. A163) or None if not found
-    """
-    ns = {"jp": "http://www.jpo.go.jp"}
-    tree = ET.parse(procedure_path)
-    elem = tree.find(".//jp:document-name", ns)
-    if elem is None:
-        return None
-
-    # Namespaced attributes are stored as expanded QName keys.
-    code = elem.get("{http://www.jpo.go.jp}document-code")
-    return code.strip() if code else None
-
