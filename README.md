@@ -33,7 +33,7 @@ pip install libefiling
 
 ## 使い方
 ```python
-from libefiling import parse_archive, ImageConvertParam, generate_sha256, get_document_code, get_doc_id
+from libefiling import parse_archive, ImageConvertParam, Source
 
 params = [
     ImageConvertParam(
@@ -68,8 +68,13 @@ OUT='output'
 ###     "chemical-formulas", "figures", "equations", "tables", "other-images", "ALL"
 ### ]
 ocr_target = ["other-images"]
-doc_id = generate_sha256(SRC)
-if doc_id === '...':
+
+# src のハッシュ値や文書コードを生成して、処理するか判定する例
+source = Source.create(SRC)
+document_code = source.get_document_code()
+if document_code not in ['A163', 'A151']:
+    raise ValueError(f"Unsupported document code: {document_code}")
+if source.sha256 == '...'
     print("Already processed")
 else:
   parse_archive(
@@ -81,8 +86,7 @@ else:
     image_max_workers=0,  # 0: CPU数に応じて自動
   )
 
-print(get_document_code(SRC))
-print(get_doc_id("output/manifest.json"))
+
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
  - parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
@@ -91,8 +95,7 @@ OUT に各種ファイルが展開される。第5引数はOCR処理対象の画
   - image_max_workers が 1 のとき: シリアル実行
   - image_max_workers が 2 以上のとき: スレッド並列実行
   - image_max_workers が 0 のとき: CPU数ベースで自動設定
- - get_document_code は アーカイブのパス名か、parse_archive で生成された manifest.json のパスを与えると、文書コード(e.g. A163)を返す。
- - get_doc_id は parse_archive で生成された manifest.json のパスを与えると、doc_id を返す。
+  - source = Source.create(SRC) の source は、manifest.json, xml/sources.xml の内容とおなじ。parse_archive するまえに、source.sha256 を得られるということ。
 
 ### 画像変換の高速化オプション
 既定では Pillow でリサイズします。環境変数 LIBEFILING_RESIZER_BACKEND を指定すると、
@@ -176,3 +179,11 @@ MIT ライセンス
 0.1.60
  - get_document_code 関数は、manifest.jsonだけでなく、アーカイブパス・手続ファイルを与えても文書コードを返すようにした。
  - manifest.json に 文書コードを含めた
+
+0.2.0
+ - manifest.json の documents フィールドを sources フィールドに変更した。
+   - sources の子要素は配列でなく archive, procedure とした。
+   - sources.document_code フィールドは、文書コードを表す
+ - get_document_code 廃止，Source クラスの get_document_code で代替
+ - get_doc_id, generate_sha256 関数廃止, Source クラスの sha256 で代替
+ - xml/sources.xml をはき出すようにした. manifest.json の sources フィールドと同じ内容を表す。

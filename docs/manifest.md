@@ -40,7 +40,7 @@ manifest.json は、次の設計方針に基づいている。
 {
   "manifest_version": "1.0.0",
   "generator": { ... },
-  "document": { ... },
+  "sources": { ... },
   "paths": { ... },
   "xml_files": [ ... ],
   "images": [ ... ],
@@ -71,13 +71,11 @@ manifest.json は、次の設計方針に基づいている。
 - 再現性やデバッグのために使用される
 
 
-## 4.3 document
+## 4.3 sources
 ```json
-"document": {
-  "doc_id": "D000001",
-  "code": "A163",
-  "sources": [
-    {
+"sources": {
+  "document_code": "A163",
+  "archive": {
     "filename": "...AAA.JWX",
     "sha256": "...",
     "byte_size": 12345678,
@@ -85,7 +83,7 @@ manifest.json は、次の設計方針に基づいている。
     "kind": "AA",
     "extension": ".JWX"
   },
-   {
+  "procedure": {
     "filename": "...AFM.XML",
     "sha256": "...",
     "byte_size": 4220,
@@ -93,14 +91,12 @@ manifest.json は、次の設計方針に基づいている。
     "kind": "FM",
     "extension": ".XML"
   }
-  ]
 }
 ```
 
-- doc_id は、この文書単位を一意に識別するためのID
-- code は、文書の分類コード
-- source は基になったファイルに関する情報
-- archive_sha256 は再処理判定や追跡用
+- document_code は、文書の分類コード
+- archive, procedure は基になったファイルに関する情報
+- sha256 はarchive, procedure のファイル内容に基づいて生成されたハッシュ値。処理済みかどうかの判定に使える
 - task, kind, extension はファイル名から得られるアーカイブの属する業務、種類、拡張子
 - task の値は以下の通り
   - A: 出願
@@ -118,7 +114,6 @@ manifest.json は、次の設計方針に基づいている。
   - ER: 緊急避難用送信ファイル
   - FM: 手続情報管理ファイル
   - XX: 不明（上記に当てはまらない場合）
-- procedure_source は手続き情報ファイルに関する情報
 
 ### 4.4 paths
 ```json

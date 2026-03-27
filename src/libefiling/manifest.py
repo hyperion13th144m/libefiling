@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
-from typing import List, Literal, Optional, get_args
+from typing import List, Optional
+from xml.etree import ElementTree as ET
 
 from pydantic import BaseModel, Field
 
+from libefiling.archive.utils import generate_sha256
 from libefiling.image.kind import IMAGE_KIND
 from libefiling.xml.kind import XML_KIND
 
@@ -30,13 +31,14 @@ class Source(BaseModel):
     extension: str
 
     @classmethod
-    def create(cls, file_path: str, sha256: str) -> Source:
+    def create(cls, file_path: str | Path) -> Source:
         """Create Source from file path
 
         Args:
-            file_path (str): file path
+            file_path (str | Path): file path
         """
         filename = Path(file_path).name
+        sha256 = generate_sha256(file_path)
         byte_size = Path(file_path).stat().st_size
         if len(filename) == 63:
             task = filename[56 : 56 + 1]
@@ -54,11 +56,55 @@ class Source(BaseModel):
             extension=extension,
         )
 
+    def get_document_code(self) -> str:
+        """Get document code from archive file name
 
-class DocumentInfo(BaseModel):
-    doc_id: str
-    code: str
-    sources: List[Source]
+        Args:
+        Returns:
+            str: document code (e.g. A163) or None if not found
+        """
+        if len(self.filename) < 29:
+            return "UNKNOWN"
+        else:
+            return self.filename[19 : 19 + 9].replace("_", "").strip()
+
+
+class Sources(BaseModel):
+    document_code: str
+    archive: Source
+    procedure: Source
+
+    def save_as_xml(self, xml_path: str) -> None:
+        """Save Sources as XML file
+
+        Args:
+            xml_path (str): XML file path to save
+        """
+        root = ET.Element("sources", attrib={"document-code": self.document_code})
+        for source in [self.archive, self.procedure]:
+            ET.SubElement(
+                root,
+                "source",
+                attrib={
+                    "filename": source.filename,
+                    "sha256": source.sha256,
+                    "byte-size": str(source.byte_size),
+                    "task": source.task,
+                    "kind": source.kind,
+                    "extension": source.extension,
+                },
+            )
+        tree = ET.ElementTree(root)
+        tree.write(xml_path, encoding="utf-8", xml_declaration=True)
+
+    def to_xml_file(self, xml_path: str) -> XmlFile:
+        return XmlFile(
+            filename=Path(xml_path).name,
+            original_filename=None,
+            sha256=generate_sha256(xml_path),
+            encoding=EncodingInfo(detected="UTF-8", normalized_to="UTF-8"),
+            kind="source",
+        )
 
 
 # -------------------------
@@ -152,23 +198,8 @@ class Stats(BaseModel):
 class Manifest(BaseModel):
     manifest_version: str = "1.0.0"
     generator: GeneratorInfo
-    document: DocumentInfo
+    sources: Sources
     paths: Paths = Paths()
     xml_files: List[XmlFile] = []
     images: List[ImageEntry] = []
     stats: Stats
-    images: List[ImageEntry] = []
-    stats: Stats
-
-
-def get_doc_id(manifest_path: str) -> str | None:
-    """Get document ID from manifest file
-
-    Args:
-        manifest_path (str): manifest file path (e.g. manifest.json)
-    Returns:
-        str: document ID (e.g. 2024000000000)
-    """
-    mp = Path(manifest_path)
-    manifest = Manifest.model_validate_json(mp.read_text(encoding="utf-8"))
-    return manifest.document.doc_id.strip() if manifest.document.doc_id else None
