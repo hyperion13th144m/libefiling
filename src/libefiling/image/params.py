@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ImageAttribute(BaseModel):
@@ -13,4 +13,4 @@ class ImageConvertParam(BaseModel):
     height: int
     suffix: str = ""
     format: str = ".webp"
-    attributes: List[ImageAttribute] = []
+    attributes: List[ImageAttribute] = Field(default_factory=list)

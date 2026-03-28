@@ -1,5 +1,5 @@
 import re
-from typing import Literal, TypedDict
+from typing import Literal
 
 XML_KIND = Literal[
     "pkgheader",
@@ -27,126 +27,33 @@ XML_KIND = Literal[
     "images-information",
     "unknown",
 ]
-
-
-class XML_RE_MAP(TypedDict):
-    kind: XML_KIND
-    regex: re.Pattern
-    description: str
-
-
-re_xml: list[XML_RE_MAP] = [
-    {
-        "kind": "pkgheader",
-        "regex": re.compile(r"JPOXMLDOC01-pkgh\.xml"),
-        "description": "pkgheader XML JPOXMLDOC01-pkgh.xml",
-    },
-    {
-        "kind": "package-data",
-        "regex": re.compile(r"JPOXMLDOC01-pkda\.xml"),
-        "description": "package-data XML JPOXMLDOC01-pkda.xml",
-    },
-    {
-        "kind": "image-list",
-        "regex": re.compile(r"JPOXMLDOC01-jpflst\.xml"),
-        "description": "イメージ一覧",
-    },
-    {
-        "kind": "file-list",
-        "regex": re.compile(r".+-jpflst\.xml"),
-        "description": "ファイル一覧",
-    },
-    {
-        "kind": "management-info",
-        "regex": re.compile(r".+-jpmngt\.xml"),
-        "description": "管理情報",
-    },
-    {
-        "kind": "request",
-        "regex": re.compile(r"JPOXMLDOC01-requ\.xml"),
-        "description": "request XML",
-    },
-    {
-        "kind": "declaration",
-        "regex": re.compile(r"JPOXMLDOC\d{2}-decl\.xml"),
-        "description": "declaration XML",
-    },
-    {
-        "kind": "power-of-attorney",
-        "regex": re.compile(r"JPOXMLDOC\d{2}-poat\.xml"),
-        "description": "power-of-attorney XML",
-    },
-    {
-        "kind": "fee-sheet",
-        "regex": re.compile(r"JPOXMLDOC01-fees\.xml"),
-        "description": "fee-sheet XML",
-    },
-    {
-        "kind": "indication-bio-deposit",
-        "regex": re.compile(r"JPOXMLDOC\d{2}-biod\.xml"),
-        "description": "indication-bio-deposit XML",
-    },
-    {
-        "kind": "bibliographic-info",
-        "regex": re.compile(r"JPOXMLDOC01-jpbibl\.xml"),
-        "description": "書誌情報 or 特殊申請 XML（送付票）",
-    },
-    {
-        "kind": "application-body",
-        "regex": re.compile(r"JPOXMLDOC01-appb\.xml"),
-        "description": "application-body XML",
-    },
-    {
-        "kind": "drawings",
-        "regex": re.compile(r"JPOXMLDOC01-jpdrab\.xml"),
-        "description": "図面の提出書",
-    },
-    {
-        "kind": "foreign-language-body",
-        "regex": re.compile(r"JPOXMLDOC01-jpfolb\.xml"),
-        "description": "foreign-language-body XML",
-    },
-    {
-        "kind": "sequence-list",
-        "regex": re.compile(r"JPOXMLDOC01-jpseql\.xml"),
-        "description": "配列表",
-    },
-    {
-        "kind": "st26-sequence-list",
-        "regex": re.compile(r"JPOXMLDOC01-seql\.xml"),
-        "description": "ST.26 sequence-list XML",
-    },
-    {
-        "kind": "attached-documents",
-        "regex": re.compile(r"JPOXMLDOC01-jpatta\.xml"),
-        "description": "添付書類（国内出願）",
-    },
-    {
-        "kind": "special-attached-documents",
-        "regex": re.compile(r"JPOXMLDOC01-jpsatt\.xml"),
-        "description": "特殊申請 添付書類",
-    },
-    {
-        "kind": "special-st26-sequence-list",
-        "regex": re.compile(r"JPOXMLDOC01-seql-S\d{6}\.xml"),
-        "description": "特殊申請 ST.26 sequence-list",
-    },
-    {
-        "kind": "notice",
-        "regex": re.compile(r".+-jpntce\.xml"),
-        "description": "発送書類",
-    },
-    {
-        "kind": "procedure",
-        "regex": re.compile(r"procedure\.xml"),
-        "description": "procedure XML procedure.xml",
-    },
-    {
-        "kind": "source",
-        "regex": re.compile(r"source\.xml"),
-        "description": "source XML source.xml",
-    },
-]
+_XML_KIND_RULES: tuple[tuple[XML_KIND, re.Pattern[str]], ...] = (
+    ("pkgheader", re.compile(r"JPOXMLDOC01-pkgh\.xml")),
+    ("package-data", re.compile(r"JPOXMLDOC01-pkda\.xml")),
+    ("image-list", re.compile(r"JPOXMLDOC01-jpflst\.xml")),
+    ("file-list", re.compile(r".+-jpflst\.xml")),
+    ("management-info", re.compile(r".+-jpmngt\.xml")),
+    ("request", re.compile(r"JPOXMLDOC01-requ\.xml")),
+    ("declaration", re.compile(r"JPOXMLDOC\d{2}-decl\.xml")),
+    ("power-of-attorney", re.compile(r"JPOXMLDOC\d{2}-poat\.xml")),
+    ("fee-sheet", re.compile(r"JPOXMLDOC01-fees\.xml")),
+    ("indication-bio-deposit", re.compile(r"JPOXMLDOC\d{2}-biod\.xml")),
+    ("bibliographic-info", re.compile(r"JPOXMLDOC01-jpbibl\.xml")),
+    ("application-body", re.compile(r"JPOXMLDOC01-appb\.xml")),
+    ("drawings", re.compile(r"JPOXMLDOC01-jpdrab\.xml")),
+    ("foreign-language-body", re.compile(r"JPOXMLDOC01-jpfolb\.xml")),
+    ("sequence-list", re.compile(r"JPOXMLDOC01-jpseql\.xml")),
+    ("st26-sequence-list", re.compile(r"JPOXMLDOC01-seql\.xml")),
+    ("attached-documents", re.compile(r"JPOXMLDOC01-jpatta\.xml")),
+    ("special-attached-documents", re.compile(r"JPOXMLDOC01-jpsatt\.xml")),
+    (
+        "special-st26-sequence-list",
+        re.compile(r"JPOXMLDOC01-seql-S\d{6}\.xml"),
+    ),
+    ("notice", re.compile(r".+-jpntce\.xml")),
+    ("procedure", re.compile(r"procedure\.xml")),
+    ("source", re.compile(r"source\.xml")),
+)
 
 
 def detect_xml_kind(
@@ -156,7 +63,7 @@ def detect_xml_kind(
 
     Args:
         xml_name (str): XML name"""
-    for re_map in re_xml:
-        if re_map["regex"].match(xml_name):
-            return re_map["kind"]
+    for kind, pattern in _XML_KIND_RULES:
+        if pattern.fullmatch(xml_name):
+            return kind
     return "unknown"

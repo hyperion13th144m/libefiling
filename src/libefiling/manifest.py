@@ -205,7 +205,7 @@ class DerivedImage(BaseModel):
     width: int
     height: int
     sha256: str
-    attributes: List[ImageAttributes] = []
+    attributes: List[ImageAttributes] = Field(default_factory=list)
 
 
 class OcrInfo(BaseModel):
@@ -228,7 +228,7 @@ class ImageEntry(BaseModel):
     sha256: str
     media_type: str = "image/tiff"
     kind: IMAGE_KIND
-    derived: List[DerivedImage] = []
+    derived: List[DerivedImage] = Field(default_factory=list)
     ocr: Optional[OcrInfo] = None
 
     @staticmethod
@@ -299,14 +299,24 @@ class Stats(BaseModel):
     image_derived_count: int
     ocr_result_count: int
 
+    @staticmethod
+    def _count_files_by_suffix(directory: Path, suffixes: set[str]) -> int:
+        lowered = {suffix.lower() for suffix in suffixes}
+        return sum(
+            1
+            for file_path in directory.rglob("*")
+            if file_path.is_file() and file_path.suffix.lower() in lowered
+        )
+
     @classmethod
     def create(cls, path: Paths) -> "Stats":
-        xml_count = len(list(path.xml_dir.glob("*.xml")))
-        image_original_count = len(list(path.raw_dir.glob("*.tif"))) + len(
-            list(path.raw_dir.glob("*.jpg"))
+        xml_count = cls._count_files_by_suffix(path.xml_dir, {".xml"})
+        image_original_count = cls._count_files_by_suffix(
+            path.raw_dir,
+            {".tif", ".tiff", ".jpg", ".jpeg"},
         )
-        image_derived_count = len(list(path.images_dir.glob("*.webp")))
-        ocr_result_count = len(list(path.ocr_dir.glob("*.txt")))
+        image_derived_count = cls._count_files_by_suffix(path.images_dir, {".webp"})
+        ocr_result_count = cls._count_files_by_suffix(path.ocr_dir, {".txt"})
         return cls(
             xml_count=xml_count,
             image_original_count=image_original_count,
@@ -324,9 +334,9 @@ class Manifest(BaseModel):
     manifest_version: str = "1.0.0"
     generator: GeneratorInfo
     sources: Sources
-    paths: Paths = Paths()
-    xml_files: List[XmlFile] = []
-    images: List[ImageEntry] = []
+    paths: Paths = Field(default_factory=Paths)
+    xml_files: List[XmlFile] = Field(default_factory=list)
+    images: List[ImageEntry] = Field(default_factory=list)
     stats: Stats
 
     @classmethod

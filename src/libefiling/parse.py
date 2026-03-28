@@ -1,6 +1,7 @@
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Iterable, Iterator, List
 
@@ -33,7 +34,7 @@ def parse_archive(
     src_archive_path: str,
     src_procedure_path: str,
     output_dir: str,
-    image_params: list[ImageConvertParam] = defaultImageParams,
+    image_params: list[ImageConvertParam] | None = None,
     ocr_target: List[OCR_TARGET] | None = None,
     image_max_workers: int | None = None,
 ):
@@ -65,12 +66,14 @@ def parse_archive(
     ### guess language
     lang = guess_language_by_filename(str(p.xml_dir))
 
+    params = image_params if image_params is not None else defaultImageParams
+
     ### process images
     images = process_images(
         p.raw_images(),
         p.images_dir,
         p.ocr_dir,
-        image_params,
+        params,
         lang,
         ocr_target,
         max_workers=image_max_workers,
@@ -180,13 +183,16 @@ def process_images(
         ]
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
+        process_one = partial(
+            _process_single_image,
+            images_dir=images_dir,
+            ocr_dir=ocr_dir,
+            image_params=image_params,
+            lang=lang,
+            ocr_target=ocr_target,
+        )
         return list(
-            executor.map(
-                lambda image: _process_single_image(
-                    image, images_dir, ocr_dir, image_params, lang, ocr_target
-                ),
-                image_list,
-            )
+            executor.map(process_one, image_list)
         )
 
 
@@ -207,9 +213,9 @@ def _process_single_image(
     ocr_target: List[OCR_TARGET] | None,
 ) -> ImageEntry:
     derived_images = convert_images(image, images_dir, image_params)
+    image_kind = detect_image_kind(image.name)
 
     if ocr_target is not None:
-        image_kind = detect_image_kind(image.name)
         if image_kind in ocr_target or "ALL" in ocr_target:
             ocr = get_ocr_info(image, ocr_dir, lang)
         else:
@@ -221,7 +227,7 @@ def _process_single_image(
         filename=image.name,
         sha256=generate_sha256(image),
         media_type=get_media_type(image.suffix),
-        kind=detect_image_kind(image.name),
+        kind=image_kind,
         derived=derived_images,
         ocr=ocr,
     )

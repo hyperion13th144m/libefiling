@@ -187,3 +187,6 @@ MIT ライセンス
  - get_document_code 廃止，Source クラスの get_document_code で代替
  - get_doc_id, generate_sha256 関数廃止, Source クラスの sha256 で代替
  - xml/sources.xml をはき出すようにした. manifest.json の sources フィールドと同じ内容を表す。
+
+0.2.1
+ - xml/images-information.xml をはき出すようにした. manifest.json の images フィールドと同じ内容 + ocr テキストを含んだxml
