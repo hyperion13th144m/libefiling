@@ -1,8 +1,6 @@
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
-from importlib.metadata import version as get_version
-from itertools import chain
 from pathlib import Path
 from typing import Iterable, Iterator, List
 
@@ -12,12 +10,11 @@ from libefiling.image.mediatype import get_media_type
 from libefiling.manifest import (
     DerivedImage,
     EncodingInfo,
-    GeneratorInfo,
     ImageAttributes,
     ImageEntry,
     Manifest,
     OcrInfo,
-    Source,
+    Paths,
     Sources,
     Stats,
     XmlFile,
@@ -50,70 +47,60 @@ def parse_archive(
     if not output_root.exists():
         output_root.mkdir(parents=True, exist_ok=True)
 
-    extracted_files = extract_archive(src_archive_path)
-
     ### create output subdirectories
-    raw_dir = output_root / "raw"
-    xml_dir = output_root / "xml"
-    images_dir = output_root / "images"
-    ocr_dir = output_root / "ocr"
-    for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
-        d.mkdir(parents=True, exist_ok=True)
+    p = Paths.create(output_root)
 
     ### extract archive to raw_dir
-    save_raw_files(extracted_files, raw_dir)
+    extracted_files = extract_archive(src_archive_path)
+    save_raw_files(extracted_files, p.raw_dir)
 
     ### convert charset of extracted XML files to UTF-8 and save to xml_dir
-    raw_xml_files = raw_dir.glob("*.xml", case_sensitive=False)
-    xml_files = process_xml(raw_xml_files, xml_dir)
+    raw_xml_files = p.raw_dir.glob("*.xml", case_sensitive=False)
+    xml_files = process_xml(raw_xml_files, p.xml_dir)
 
     ### convert charset of procedure xml to UTF-8 and save to xml_dir
-    proc_xml_path = xml_dir / "procedure.xml"
+    proc_xml_path = p.xml_dir / "procedure.xml"
     xml_files.append(process_procedure_xml(Path(src_procedure_path), proc_xml_path))
 
     ### guess language
-    lang = guess_language_by_filename(str(xml_dir))
+    lang = guess_language_by_filename(str(p.xml_dir))
 
     ### process images
-    src_images = chain(
-        Path(raw_dir).glob("*.tif", case_sensitive=False),
-        Path(raw_dir).glob("*.jpg", case_sensitive=False),
-    )
     images = process_images(
-        src_images,
-        images_dir,
-        ocr_dir,
+        p.raw_images(),
+        p.images_dir,
+        p.ocr_dir,
         image_params,
         lang,
         ocr_target,
         max_workers=image_max_workers,
     )
 
-    ### generate sources.xml
-    source_archive = Source.create(src_archive_path)
-    source_proc = Source.create(src_procedure_path)
-    sources = Sources(
-        document_code=source_archive.get_document_code(),
-        archive=source_archive,
-        procedure=source_proc,
+    ### generate images-information.xml
+    image_info_xml_path = p.xml_dir / "images-information.xml"
+    ImageEntry.save_as_xml(images, image_info_xml_path)
+    xml_files.append(
+        XmlFile.to_xml_file(image_info_xml_path, kind="images-information")
     )
-    sources_xml_path = str(xml_dir / "sources.xml")
-    sources.save_as_xml(sources_xml_path)
-    xml_files.append(sources.to_xml_file(sources_xml_path))
 
-    # generate manifest
-    manifest = process_manifest(
+    ### generate sources.xml
+    sources = Sources.create(src_archive_path, src_procedure_path)
+    sources_xml_path = p.xml_dir / "sources.xml"
+    sources.save_as_xml(sources_xml_path)
+    xml_files.append(XmlFile.to_xml_file(sources_xml_path, kind="source"))
+
+    ### calc stats
+    stats = Stats.create(p)
+
+    ### generate manifest
+    manifest = Manifest.create(
         sources,
-        str(xml_dir),
         xml_files,
         images,
+        p.relative_to(p.root),  # paths in manifest should be relative to root
+        stats,
     )
-
-    manifest_path = output_root / "manifest.json"
-    manifest_path.write_text(
-        manifest.model_dump_json(indent=4, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    manifest.save_as_json(p.root / "manifest.json")
 
 
 def save_raw_files(
@@ -224,7 +211,7 @@ def _process_single_image(
     if ocr_target is not None:
         image_kind = detect_image_kind(image.name)
         if image_kind in ocr_target or "ALL" in ocr_target:
-            ocr = get_ocr_text(image, ocr_dir, lang)
+            ocr = get_ocr_info(image, ocr_dir, lang)
         else:
             ocr = None
     else:
@@ -273,39 +260,29 @@ def convert_images(
     return derived_images
 
 
-def get_ocr_text(image: Path, ocr_dir: Path, lang: str) -> OcrInfo:
+def get_ocr_info(image: Path, ocr_dir: Path, lang: str) -> OcrInfo:
     ocr_text = ocr_image(str(image), lang=lang)
+    ocr_text = sanitize_text(ocr_text)
     ocr_path = ocr_dir / (Path(image).stem + ".txt")
     with open(ocr_path, "w", encoding="utf-8") as f:
         f.write(ocr_text)
-    return OcrInfo(
+    o = OcrInfo(
         filename=ocr_path.name,
         sha256=generate_sha256(ocr_path),
         lang=lang,
     )
+    o.add_ocr_text(ocr_text)
+    return o
 
 
-def process_manifest(
-    sources: Sources,
-    xml_dir: str,
-    xml_files: list[XmlFile],
-    images: list[ImageEntry],
-) -> Manifest:
-    manifest = Manifest(
-        generator=GeneratorInfo(
-            name="libefiling",
-            version=get_version("libefiling"),
-            created_at=datetime.now(),
-        ),
-        sources=sources,
-        xml_files=xml_files,
-        images=images,
-        stats=Stats(
-            xml_count=len(list(Path(xml_dir).glob("*.xml"))),
-            image_original_count=len(images),
-            image_derived_count=sum(len(img.derived) for img in images),
-            ocr_result_count=len(images),
-        ),
-    )
-
-    return manifest
+def sanitize_text(text: str) -> str:
+    """Sanitize text by removing control characters and trimming whitespace."""
+    # remove quote, double quote, backslash, brackets, etc.
+    # that may cause issues in downstream processing
+    sanitized = re.sub(r"[!@#$%&*()\-_+=\[\]{}:;\"',./<>?^`|~\\]", "", text)
+    sanitized = re.sub(
+        r"\s+", " ", sanitized
+    )  # replace multiple whitespace with single space
+    sanitized = sanitized.replace("\r", "")  # remove carriage return
+    sanitized = sanitized.replace("\n", "")  # remove newline
+    return sanitized.strip()

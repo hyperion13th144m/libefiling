@@ -24,6 +24,7 @@ XML_KIND = Literal[
     "special-st26-sequence-list",
     "procedure",
     "source",
+    "images-information",
     "unknown",
 ]
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from importlib.metadata import version as get_version
 from pathlib import Path
 from typing import List, Optional
 from xml.etree import ElementTree as ET
@@ -74,12 +75,26 @@ class Sources(BaseModel):
     archive: Source
     procedure: Source
 
-    def save_as_xml(self, xml_path: str) -> None:
+    @classmethod
+    def create(cls, archive_path: str | Path, procedure_path: str | Path) -> Sources:
+        """Create Sources from archive and procedure file paths
+
+        Args:
+            archive_path (str | Path): archive file path
+            procedure_path (str | Path): procedure file path
+        """
+        archive = Source.create(archive_path)
+        procedure = Source.create(procedure_path)
+        document_code = archive.get_document_code()
+        return cls(document_code=document_code, archive=archive, procedure=procedure)
+
+    def save_as_xml(self, xml_path: str | Path) -> None:
         """Save Sources as XML file
 
         Args:
-            xml_path (str): XML file path to save
+            xml_path (str | Path): XML file path to save
         """
+        xml_path = Path(xml_path)
         root = ET.Element("sources", attrib={"document-code": self.document_code})
         for i, source in enumerate([self.archive, self.procedure]):
             ET.SubElement(
@@ -97,15 +112,6 @@ class Sources(BaseModel):
         tree = ET.ElementTree(root)
         tree.write(xml_path, encoding="utf-8", xml_declaration=True)
 
-    def to_xml_file(self, xml_path: str) -> XmlFile:
-        return XmlFile(
-            filename=Path(xml_path).name,
-            original_filename=None,
-            sha256=generate_sha256(xml_path),
-            encoding=EncodingInfo(detected="UTF-8", normalized_to="UTF-8"),
-            kind="source",
-        )
-
 
 # -------------------------
 # Paths
@@ -113,11 +119,44 @@ class Sources(BaseModel):
 
 
 class Paths(BaseModel):
-    root: str = "."
-    raw_dir: str = "raw"
-    xml_dir: str = "xml"
-    images_dir: str = "images"
-    ocr_dir: str = "ocr"
+    root: Path = Path(".")
+    raw_dir: Path = Path("raw")
+    xml_dir: Path = Path("xml")
+    images_dir: Path = Path("images")
+    ocr_dir: Path = Path("ocr")
+
+    @classmethod
+    def create(cls, root: str | Path = ".") -> Paths:
+        root = Path(root)
+        raw_dir = root / "raw"
+        xml_dir = root / "xml"
+        images_dir = root / "images"
+        ocr_dir = root / "ocr"
+        for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
+            d.mkdir(parents=True, exist_ok=True)
+
+        return cls(
+            root=root,
+            raw_dir=raw_dir,
+            xml_dir=xml_dir,
+            images_dir=images_dir,
+            ocr_dir=ocr_dir,
+        )
+
+    def relative_to(self, base: str | Path) -> Paths:
+        base = Path(base)
+        return Paths(
+            root=self.root.relative_to(base),
+            raw_dir=self.raw_dir.relative_to(base),
+            xml_dir=self.xml_dir.relative_to(base),
+            images_dir=self.images_dir.relative_to(base),
+            ocr_dir=self.ocr_dir.relative_to(base),
+        )
+
+    def raw_images(self) -> List[Path]:
+        return list(self.raw_dir.glob("*.tif", case_sensitive=False)) + list(
+            self.raw_dir.glob("*.jpg", case_sensitive=False)
+        )
 
 
 # -------------------------
@@ -138,6 +177,16 @@ class XmlFile(BaseModel):
     encoding: EncodingInfo
     media_type: str = "application/xml"
     kind: XML_KIND
+
+    @classmethod
+    def to_xml_file(cls, xml_path: str | Path, kind: XML_KIND) -> XmlFile:
+        return cls(
+            filename=Path(xml_path).name,
+            original_filename=None,
+            sha256=generate_sha256(xml_path),
+            encoding=EncodingInfo(detected="UTF-8", normalized_to="UTF-8"),
+            kind=kind,
+        )
 
 
 # -------------------------
@@ -164,9 +213,14 @@ class OcrInfo(BaseModel):
     format: str = "text/plain"
     sha256: str
     lang: Optional[str] = "jpn"
-    engine: Optional[str] = None
-    engine_version: Optional[str] = None
-    confidence_avg: Optional[float] = None
+
+    def add_ocr_text(self, ocr_text: str) -> None:
+        self._ocr_text = ocr_text
+
+    def get_ocr_text(self) -> Optional[str]:
+        if hasattr(self, "_ocr_text") and len(self._ocr_text) > 0:
+            return self._ocr_text
+        return None
 
 
 class ImageEntry(BaseModel):
@@ -176,6 +230,62 @@ class ImageEntry(BaseModel):
     kind: IMAGE_KIND
     derived: List[DerivedImage] = []
     ocr: Optional[OcrInfo] = None
+
+    @staticmethod
+    def save_as_xml(entries: List[ImageEntry], xml_path: str | Path) -> None:
+        """Save Sources as XML file
+
+        Args:
+            xml_path (str | Path): XML file path to save
+        """
+        xml_path = Path(xml_path)
+        root = ET.Element("images")
+        for entry in entries:
+            image_elem = ET.SubElement(
+                root,
+                "image",
+                attrib={
+                    "filename": entry.filename,
+                    "sha256": entry.sha256,
+                    "media-type": entry.media_type,
+                    "kind": entry.kind,
+                },
+            )
+            for derived in entry.derived:
+                derived_elem = ET.SubElement(
+                    image_elem,
+                    "derived",
+                    attrib={
+                        "filename": derived.filename,
+                        "sha256": derived.sha256,
+                        "media-type": derived.media_type,
+                        "width": str(derived.width),
+                        "height": str(derived.height),
+                    },
+                )
+                for attr in derived.attributes:
+                    ET.SubElement(
+                        derived_elem,
+                        "attribute",
+                        attrib={"key": attr.key, "value": attr.value},
+                    )
+            if entry.ocr is not None:
+                ocr_elem = ET.SubElement(
+                    image_elem,
+                    "ocr",
+                    attrib={
+                        "filename": entry.ocr.filename,
+                        "sha256": entry.ocr.sha256,
+                        "format": entry.ocr.format,
+                        "lang": entry.ocr.lang or "",
+                    },
+                )
+                t = entry.ocr.get_ocr_text()
+                if t is not None:
+                    ocr_elem.text = t
+
+        tree = ET.ElementTree(root)
+        tree.write(xml_path, encoding="utf-8", xml_declaration=True)
 
 
 # -------------------------
@@ -188,6 +298,21 @@ class Stats(BaseModel):
     image_original_count: int
     image_derived_count: int
     ocr_result_count: int
+
+    @classmethod
+    def create(cls, path: Paths) -> "Stats":
+        xml_count = len(list(path.xml_dir.glob("*.xml")))
+        image_original_count = len(list(path.raw_dir.glob("*.tif"))) + len(
+            list(path.raw_dir.glob("*.jpg"))
+        )
+        image_derived_count = len(list(path.images_dir.glob("*.webp")))
+        ocr_result_count = len(list(path.ocr_dir.glob("*.txt")))
+        return cls(
+            xml_count=xml_count,
+            image_original_count=image_original_count,
+            image_derived_count=image_derived_count,
+            ocr_result_count=ocr_result_count,
+        )
 
 
 # -------------------------
@@ -203,3 +328,30 @@ class Manifest(BaseModel):
     xml_files: List[XmlFile] = []
     images: List[ImageEntry] = []
     stats: Stats
+
+    @classmethod
+    def create(
+        cls,
+        sources: Sources,
+        xml_files: list[XmlFile],
+        images: list[ImageEntry],
+        paths: Paths,
+        stats: Stats,
+    ) -> Manifest:
+        return cls(
+            generator=GeneratorInfo(
+                name="libefiling",
+                version=get_version("libefiling"),
+                created_at=datetime.now(),
+            ),
+            sources=sources,
+            paths=paths,
+            xml_files=xml_files,
+            images=images,
+            stats=stats,
+        )
+
+    def save_as_json(self, json_path: str | Path) -> None:
+        json_path = Path(json_path)
+        with open(json_path, "w", encoding="utf-8") as f:
+            f.write(self.model_dump_json(indent=4, ensure_ascii=False))
