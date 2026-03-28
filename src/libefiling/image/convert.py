@@ -60,8 +60,8 @@ def convert(src: Path, width: int, height: int) -> Image.Image:
 def load_image(src: Path) -> Image.Image:
     # multiprocessing環境下でのデッドロックを回避するため、
     # 画像を開いた直後にload()を呼び出してファイルを閉じる
-    image = Image.open(str(src))
-    image.load()  # 画像データをメモリに読み込み、ファイルを閉じる
+    with Image.open(str(src)) as source:
+        image = source.copy()
 
     # convert a monochrome image to grayscale.
     if image.mode == "1":
@@ -90,7 +90,7 @@ def convert_prepared(image: Image.Image, width: int, height: int) -> Image.Image
         return resized_image
 
 
-def crop(image: Image.Image):
+def crop(image: Image.Image) -> Image.Image:
     crop_box = get_crop_box(image)
     if crop_box is None or crop_box == (0, 0, image.width, image.height):
         return image
@@ -98,7 +98,7 @@ def crop(image: Image.Image):
     return image.crop(crop_box)
 
 
-def get_crop_box(image: Image.Image):
+def get_crop_box(image: Image.Image) -> tuple[int, int, int, int] | None:
     grayscale = image if image.mode == "L" else image.convert("L")
     mask = grayscale.point(FOREGROUND_LUT, mode="1")
     return mask.getbbox()
@@ -168,17 +168,22 @@ def resize_with_pillow_simd(
         return None
 
 
-def get_size(image: Image.Image, width: int, height: int):
-    x_ratio = width / image.width
-    y_ratio = height / image.height
+def get_size(image: Image.Image, width: int, height: int) -> tuple[int, int]:
+    if width == 0 and height == 0:
+        raise ValueError("width and height cannot both be zero")
 
     if width == 0:
+        y_ratio = height / image.height
         resize_size = (round(image.width * y_ratio), height)
     elif height == 0:
-        resize_size = (width, round(image.height * x_ratio))
-    elif x_ratio < y_ratio:
+        x_ratio = width / image.width
         resize_size = (width, round(image.height * x_ratio))
     else:
-        resize_size = (round(image.width * y_ratio), height)
+        x_ratio = width / image.width
+        y_ratio = height / image.height
+        if x_ratio < y_ratio:
+            resize_size = (width, round(image.height * x_ratio))
+        else:
+            resize_size = (round(image.width * y_ratio), height)
 
     return resize_size

@@ -14,9 +14,8 @@ def ocr_image(src_image_path: str, lang: str) -> str:
     Returns:
         str: text extracted from image
     """
-    image = Image.open(src_image_path)
-    text = pytesseract.image_to_string(image, lang)
-    return text
+    with Image.open(src_image_path) as image:
+        return pytesseract.image_to_string(image, lang)
 
 
 def guess_language_by_filename(src_xml_dir: str) -> str:
@@ -26,7 +25,7 @@ def guess_language_by_filename(src_xml_dir: str) -> str:
         src_xml_dir (str): path to directory containing xml files.
     """
     files = Path(src_xml_dir).glob("JPOXMLDOC01-jpfolb*.xml", case_sensitive=False)
-    if len(list(files)) > 0:
+    if any(files):
         return "eng"
     else:
         return "jpn"

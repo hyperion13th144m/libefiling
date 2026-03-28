@@ -182,7 +182,8 @@ manifest.json は、次の設計方針に基づいている。
     "ocr": {
         "filename": "img-0001.txt",
         "sha256": "...",
-        "lang": "jpn"
+        "lang": "jpn",
+        "ocr_text": "..."
     }
   }
 ]
