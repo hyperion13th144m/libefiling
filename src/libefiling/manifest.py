@@ -81,10 +81,10 @@ class Sources(BaseModel):
             xml_path (str): XML file path to save
         """
         root = ET.Element("sources", attrib={"document-code": self.document_code})
-        for source in [self.archive, self.procedure]:
+        for i, source in enumerate([self.archive, self.procedure]):
             ET.SubElement(
                 root,
-                "source",
+                "archive" if i == 0 else "procedure",
                 attrib={
                     "filename": source.filename,
                     "sha256": source.sha256,
