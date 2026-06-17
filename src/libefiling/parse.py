@@ -1,11 +1,15 @@
 import os
 import re
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import Iterable, Iterator, List
 
 from libefiling.archive.utils import generate_sha256
+from libefiling.html.builder import build_appb_xml, build_jpbibl_xml
+from libefiling.html.parser import parse as parse_html_text
+from libefiling.html.reader import find_htm_file, read_htm
 from libefiling.image.kind import OCR_TARGET, detect_image_kind
 from libefiling.image.mediatype import get_media_type
 from libefiling.manifest import (
@@ -16,6 +20,7 @@ from libefiling.manifest import (
     Manifest,
     OcrInfo,
     Paths,
+    Source,
     Sources,
     Stats,
     XmlFile,
@@ -279,6 +284,117 @@ def get_ocr_info(image: Path, ocr_dir: Path, lang: str) -> OcrInfo:
     )
     o.add_ocr_text(ocr_text)
     return o
+
+
+def parse_html(
+    src_html_dir: str,
+    src_procedure_path: str,
+    output_dir: str,
+    image_params: list[ImageConvertParam] | None = None,
+    ocr_target: List[OCR_TARGET] | None = None,
+    image_max_workers: int | None = None,
+) -> None:
+    """Parse a JPO e-filing HTM directory and generate XML + WebP outputs."""
+
+    src_dir = Path(src_html_dir)
+    if not src_dir.is_dir():
+        raise FileNotFoundError(f"Source HTML directory not found: {src_html_dir}")
+    if not Path(src_procedure_path).exists():
+        raise FileNotFoundError(f"Source procedure XML not found: {src_procedure_path}")
+
+    output_root = Path(output_dir)
+    p = Paths.create(output_root)
+
+    ### find and parse the HTM file
+    htm_path = find_htm_file(src_dir)
+    lines = read_htm(htm_path)
+    doc = parse_html_text(lines)
+
+    ### write appb.xml and jpbibl.xml to xml_dir
+    xml_files: list[XmlFile] = []
+    appb_content, image_map = build_appb_xml(doc)
+    for filename, content in [
+        ("JPOXMLDOC01-appb.xml", appb_content),
+        ("JPOXMLDOC01-jpbibl.xml", build_jpbibl_xml(doc)),
+    ]:
+        out_path = p.xml_dir / filename
+        out_path.write_text(content, encoding="utf-8")
+        xml_files.append(
+            XmlFile(
+                filename=filename,
+                sha256=generate_sha256(out_path),
+                encoding=EncodingInfo(detected="shift_jis", normalized_to="UTF-8"),
+                kind=detect_xml_kind(filename),
+            )
+        )
+
+    ### copy and rename all images (figures + inline chemistry/maths/tables)
+    for src_name, dst_name in image_map.items():
+        src_img = src_dir / src_name
+        dst_img = p.raw_dir / dst_name
+        if src_img.exists():
+            shutil.copy2(src_img, dst_img)
+
+    ### copy procedure.xml (already UTF-8 for HTML input)
+    proc_xml_path = p.xml_dir / "procedure.xml"
+    shutil.copy2(src_procedure_path, proc_xml_path)
+    xml_files.append(
+        XmlFile(
+            filename=proc_xml_path.name,
+            encoding=EncodingInfo(detected=None, normalized_to="UTF-8"),
+            sha256=generate_sha256(proc_xml_path),
+            kind=detect_xml_kind(proc_xml_path.name),
+        )
+    )
+
+    ### guess language
+    lang = guess_language_by_filename(str(p.xml_dir))
+
+    params = image_params if image_params is not None else defaultImageParams
+
+    ### process images (all image files in raw_dir)
+    gif_images = [
+        f for f in p.raw_dir.iterdir()
+        if f.suffix.lower() in {".gif", ".jpg", ".jpeg", ".tif", ".tiff", ".png", ".webp"}
+    ]
+    images = process_images(
+        gif_images,
+        p.images_dir,
+        p.ocr_dir,
+        params,
+        lang,
+        ocr_target,
+        max_workers=image_max_workers,
+    )
+
+    ### generate images-information.xml
+    image_info_xml_path = p.xml_dir / "images-information.xml"
+    ImageEntry.save_as_xml(images, image_info_xml_path)
+    xml_files.append(XmlFile.to_xml_file(image_info_xml_path, kind="images-information"))
+
+    ### generate sources.xml
+    archive_source = Source.create(htm_path)
+    procedure_source = Source.create(src_procedure_path)
+    document_code = doc.file_reference_id or "UNKNOWN"
+    sources = Sources(
+        document_code=document_code,
+        archive=archive_source,
+        procedure=procedure_source,
+    )
+    sources_xml_path = p.xml_dir / "sources.xml"
+    sources.save_as_xml(sources_xml_path)
+    xml_files.append(XmlFile.to_xml_file(sources_xml_path, kind="source"))
+
+    ### calc stats and generate manifest
+    stats = Stats.create(p)
+    manifest = Manifest.create(
+        sources,
+        xml_files,
+        images,
+        p.relative_to(p.root),
+        stats,
+    )
+    manifest.save_as_json(p.root / "manifest.json")
 
 
 def sanitize_text(text: str) -> str:
