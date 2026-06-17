@@ -312,8 +312,9 @@ def parse_html(
 
     ### write appb.xml and jpbibl.xml to xml_dir
     xml_files: list[XmlFile] = []
+    appb_content, image_map = build_appb_xml(doc)
     for filename, content in [
-        ("JPOXMLDOC01-appb.xml", build_appb_xml(doc)),
+        ("JPOXMLDOC01-appb.xml", appb_content),
         ("JPOXMLDOC01-jpbibl.xml", build_jpbibl_xml(doc)),
     ]:
         out_path = p.xml_dir / filename
@@ -327,10 +328,9 @@ def parse_html(
             )
         )
 
-    ### copy and rename GIF files to raw_dir as JPOXMLDOC01-appb-D000001.gif ...
-    for fig in doc.figures:
-        src_img = src_dir / fig.src
-        dst_name = f"JPOXMLDOC01-appb-D{fig.num:06d}.gif"
+    ### copy and rename all images (figures + inline chemistry/maths/tables)
+    for src_name, dst_name in image_map.items():
+        src_img = src_dir / src_name
         dst_img = p.raw_dir / dst_name
         if src_img.exists():
             shutil.copy2(src_img, dst_img)
@@ -352,8 +352,11 @@ def parse_html(
 
     params = image_params if image_params is not None else defaultImageParams
 
-    ### process images (GIFs in raw_dir)
-    gif_images = list(p.raw_dir.glob("*.gif", case_sensitive=False))
+    ### process images (all image files in raw_dir)
+    gif_images = [
+        f for f in p.raw_dir.iterdir()
+        if f.suffix.lower() in {".gif", ".jpg", ".jpeg", ".tif", ".tiff", ".png", ".webp"}
+    ]
     images = process_images(
         gif_images,
         p.images_dir,

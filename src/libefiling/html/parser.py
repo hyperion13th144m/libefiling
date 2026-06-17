@@ -120,8 +120,8 @@ class HtmlPatent:
     desc_sections: list[DescSection] = field(default_factory=list)
 
     # ── 特許請求の範囲 ─────────────────────────────────────────────────────
-    # claim_texts[0] = claim 1 text (already joined), etc.
-    claim_texts: list[str] = field(default_factory=list)
+    # claim_raw_lines[0] = raw HTML lines for claim 1, etc.
+    claim_raw_lines: list[list[str]] = field(default_factory=list)
 
     # ── 要約書 ──────────────────────────────────────────────────────────────
     # Each element is one "item" line in the abstract (joined continuations)
@@ -325,7 +325,7 @@ def _parse_claims(lines: list[str], doc: HtmlPatent) -> None:
 
     def _flush():
         if cur_lines:
-            doc.claim_texts.append(_join_claim_lines(cur_lines))
+            doc.claim_raw_lines.append(list(cur_lines))
 
     for line in lines:
         if m := _CLAIM_NUM_RE.match(line):
@@ -336,28 +336,6 @@ def _parse_claims(lines: list[str], doc: HtmlPatent) -> None:
             cur_lines.append(line)
 
     _flush()
-
-
-def _join_claim_lines(lines: list[str]) -> str:
-    """Join claim lines: lines starting with 　 are semantic segments joined by <br />;
-    lines without leading 　 are continuations joined directly."""
-    segments: list[str] = []
-    cur = ""
-    for line in lines:
-        if not line:
-            continue
-        if line.startswith("　") or line.startswith(" "):
-            if cur:
-                segments.append(cur)
-            cur = line
-        else:
-            cur += line  # continuation: join without separator
-    if cur:
-        segments.append(cur)
-
-    if len(segments) <= 1:
-        return segments[0] if segments else ""
-    return "<br />\n".join(segments)
 
 
 # ── 要約書 parser ─────────────────────────────────────────────────────────────
