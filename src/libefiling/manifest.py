@@ -122,25 +122,19 @@ class Paths(BaseModel):
     root: Path = Path(".")
     raw_dir: Path = Path("raw")
     xml_dir: Path = Path("xml")
-    images_dir: Path = Path("images")
-    ocr_dir: Path = Path("ocr")
 
     @classmethod
     def create(cls, root: str | Path = ".") -> Paths:
         root = Path(root)
         raw_dir = root / "raw"
         xml_dir = root / "xml"
-        images_dir = root / "images"
-        ocr_dir = root / "ocr"
-        for d in [raw_dir, xml_dir, images_dir, ocr_dir]:
+        for d in [raw_dir, xml_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         return cls(
             root=root,
             raw_dir=raw_dir,
             xml_dir=xml_dir,
-            images_dir=images_dir,
-            ocr_dir=ocr_dir,
         )
 
     def relative_to(self, base: str | Path) -> Paths:
@@ -149,13 +143,14 @@ class Paths(BaseModel):
             root=self.root.relative_to(base),
             raw_dir=self.raw_dir.relative_to(base),
             xml_dir=self.xml_dir.relative_to(base),
-            images_dir=self.images_dir.relative_to(base),
-            ocr_dir=self.ocr_dir.relative_to(base),
         )
 
     def raw_images(self) -> List[Path]:
-        return list(self.raw_dir.glob("*.tif", case_sensitive=False)) + list(
-            self.raw_dir.glob("*.jpg", case_sensitive=False)
+        return (
+            list(self.raw_dir.glob("*.tif", case_sensitive=False))
+            + list(self.raw_dir.glob("*.tiff", case_sensitive=False))
+            + list(self.raw_dir.glob("*.jpg", case_sensitive=False))
+            + list(self.raw_dir.glob("*.jpeg", case_sensitive=False))
         )
 
 
@@ -190,37 +185,8 @@ class XmlFile(BaseModel):
 
 
 # -------------------------
-# Images / OCR
+# Images
 # -------------------------
-
-
-class ImageAttributes(BaseModel):
-    key: str
-    value: str
-
-
-class DerivedImage(BaseModel):
-    filename: str
-    media_type: str = "image/webp"
-    width: int
-    height: int
-    sha256: str
-    attributes: List[ImageAttributes] = Field(default_factory=list)
-
-
-class OcrInfo(BaseModel):
-    filename: str
-    format: str = "text/plain"
-    sha256: str
-    lang: Optional[str] = "jpn"
-
-    def add_ocr_text(self, ocr_text: str) -> None:
-        self._ocr_text = ocr_text
-
-    def get_ocr_text(self) -> Optional[str]:
-        if hasattr(self, "_ocr_text") and len(self._ocr_text) > 0:
-            return self._ocr_text
-        return None
 
 
 class ImageEntry(BaseModel):
@@ -228,65 +194,6 @@ class ImageEntry(BaseModel):
     sha256: str
     media_type: str = "image/tiff"
     kind: IMAGE_KIND
-    derived: List[DerivedImage] = Field(default_factory=list)
-    ocr: Optional[OcrInfo] = None
-
-    @staticmethod
-    def save_as_xml(entries: List[ImageEntry], xml_path: str | Path) -> None:
-        """Save Sources as XML file
-
-        Args:
-            xml_path (str | Path): XML file path to save
-        """
-        xml_path = Path(xml_path)
-        root = ET.Element("images")
-        for entry in entries:
-            image_elem = ET.SubElement(
-                root,
-                "image",
-                attrib={
-                    "filename": entry.filename,
-                    "sha256": entry.sha256,
-                    "media-type": entry.media_type,
-                    "kind": entry.kind,
-                },
-            )
-            for derived in entry.derived:
-                derived_elem = ET.SubElement(
-                    image_elem,
-                    "derived",
-                    attrib={
-                        "filename": derived.filename,
-                        "sha256": derived.sha256,
-                        "media-type": derived.media_type,
-                        "width": str(derived.width),
-                        "height": str(derived.height),
-                    },
-                )
-                for attr in derived.attributes:
-                    ET.SubElement(
-                        derived_elem,
-                        "attribute",
-                        attrib={"key": attr.key, "value": attr.value},
-                    )
-            if entry.ocr is not None:
-                ocr_elem = ET.SubElement(
-                    image_elem,
-                    "ocr",
-                    attrib={
-                        "filename": entry.ocr.filename,
-                        "sha256": entry.ocr.sha256,
-                        "format": entry.ocr.format,
-                        "lang": entry.ocr.lang or "",
-                    },
-                )
-                t = entry.ocr.get_ocr_text()
-                if t is not None:
-                    ocr_elem.text = t
-
-        tree = ET.ElementTree(root)
-        tree.write(xml_path, encoding="utf-8", xml_declaration=True)
-
 
 # -------------------------
 # Stats
@@ -296,8 +203,6 @@ class ImageEntry(BaseModel):
 class Stats(BaseModel):
     xml_count: int
     image_original_count: int
-    image_derived_count: int
-    ocr_result_count: int
 
     @staticmethod
     def _count_files_by_suffix(directory: Path, suffixes: set[str]) -> int:
@@ -315,13 +220,9 @@ class Stats(BaseModel):
             path.raw_dir,
             {".tif", ".tiff", ".jpg", ".jpeg"},
         )
-        image_derived_count = cls._count_files_by_suffix(path.images_dir, {".webp"})
-        ocr_result_count = cls._count_files_by_suffix(path.ocr_dir, {".txt"})
         return cls(
             xml_count=xml_count,
             image_original_count=image_original_count,
-            image_derived_count=image_derived_count,
-            ocr_result_count=ocr_result_count,
         )
 
 

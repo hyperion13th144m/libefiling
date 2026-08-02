@@ -4,7 +4,7 @@
 設計意図について説明する。
 
 `manifest.json` は、アーカイブから抽出・正規化された各種リソース
-（XML・画像・OCR結果など）を **後段の処理系が一貫して扱うための
+（XML・画像など）を **後段の処理系が一貫して扱うための
 メタデータファイル**である。
 
 ---
@@ -120,18 +120,14 @@ manifest.json は、次の設計方針に基づいている。
 "paths": {
   "root": ".",
   "raw_dir": "raw",
-  "xml_dir": "xml",
-  "images_dir": "images",
-  "ocr_dir": "ocr"
+  "xml_dir": "xml"
 }
 ```
 
 - 各リソースが配置されているディレクトリ名
 - 相対パスとして解釈される
-  - raw_dir はアーカイブから抽出され、無変換のXML, 画像ファイルを配置するディレクトリ。
-  - xml_dir は 文字コードを UTF-8に変換した XML ファイルを配置するディレクトリ。
-  - images_dir は サイズ、フォーマット変換した画像ファイルを配置するディレクトリ。
-  - ocr_dir は 画像から抽出したテキストファイルを配置するディレクトリ。
+  - raw_dir はアーカイブから抽出され、無変換の XML, 画像ファイルを配置するディレクトリ。
+  - xml_dir は文字コードを UTF-8 に変換した XML ファイルを配置するディレクトリ。
  
 
 ### 4.5 xml_files
@@ -164,44 +160,21 @@ manifest.json は、次の設計方針に基づいている。
     "filename": "JPOIMG0001.tif",
     "sha256": "...",
     "media_type": "image/tiff",
-    "kind": "figure",
-    "derived": [
-      {
-        "filename": "JPOIMG0001-thumbnail.webp",
-        "width": 300,
-        "height": 300,
-        "attributes": [
-           {
-                "key": "sizeTag",
-                "value": "thumbnail"
-           }
-        ],
-        "sha256": "..."
-      }
-    ],
-    "ocr": {
-        "filename": "img-0001.txt",
-        "sha256": "...",
-        "lang": "jpn",
-        "ocr_text": "..."
-    }
+    "kind": "figures"
   }
 ]
 ```
 
-- filename は元の画像（主に TIF）
-- derived は Web 表示用に生成された画像
-- derived 内の attributes は画像変換時の付加情報を格納する
-- OCR 結果は画像単位で紐づけられる
+- filename は元の画像（主に TIF/JPEG）
+- sha256 は raw_dir にある元画像の内容に基づく
+- kind は画像ファイル名から推定した種類
 
 
 ### 4.7 stats
 ```json
 "stats": {
   "xml_count": 3,
-  "image_original_count": 12,
-  "image_derived_count": 24,
-  "ocr_result_count": 12
+  "image_original_count": 12
 }
 ```
 

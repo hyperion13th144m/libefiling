@@ -1,5 +1,4 @@
 import argparse
-import os
 
 from libefiling.archive.extract import extract_archive
 
@@ -9,10 +8,9 @@ if __name__ == "__main__":
         "archive",
         type=str,
         help="src archive path",
-        default=os.environ.get("EXTRACT_SRC"),
     )
     parser.add_argument(
-        "output_dir", type=str, help="Output directory for extracted files", default=os.curdir
+        "output_dir", type=str, help="Output directory for extracted files"
     )
     args = parser.parse_args()
     output_dir = args.output_dir

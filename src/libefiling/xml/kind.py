@@ -23,8 +23,6 @@ XML_KIND = Literal[
     "special-attached-documents",
     "special-st26-sequence-list",
     "procedure",
-    "source",
-    "images-information",
     "unknown",
 ]
 _XML_KIND_RULES: tuple[tuple[XML_KIND, re.Pattern[str]], ...] = (
@@ -52,7 +50,6 @@ _XML_KIND_RULES: tuple[tuple[XML_KIND, re.Pattern[str]], ...] = (
     ),
     ("notice", re.compile(r".+-jpntce\.xml")),
     ("procedure", re.compile(r"procedure\.xml")),
-    ("source", re.compile(r"source\.xml")),
 )
 
 

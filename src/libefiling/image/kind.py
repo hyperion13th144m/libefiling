@@ -4,10 +4,6 @@ from typing import Literal
 IMAGE_KIND = Literal[
     "chemical-formulas", "figures", "equations", "tables", "other-images", "unknown"
 ]
-OCR_TARGET = Literal[
-    "chemical-formulas", "figures", "equations", "tables", "other-images", "ALL"
-]
-
 _OPTIONAL_EXTENSION = r"(?:\.[A-Za-z0-9]+)?"
 _KIND_RULES: tuple[tuple[IMAGE_KIND, re.Pattern[str]], ...] = (
     ("chemical-formulas", re.compile(rf".+-appb-C[0-9]+{_OPTIONAL_EXTENSION}")),

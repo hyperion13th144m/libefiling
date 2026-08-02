@@ -11,19 +11,18 @@ Detailed documentation is written in Japanese, as the primary users are Japanese
 
 ## 機能
  - アーカイブの展開 -> XML, 画像ファイルが得られる
- - 画像ファイルのフォーマット変換、サイズ変換
  - XMLファイルの文字コード変換
+ - manifest.json の生成
  - いまのところ 特許願(A163) だけが処理対象。
 
 ## 動作環境
  - ubuntu bookworm
  - python 3.14
- - tesseract
 
 ### 必要アプリのインストール
 ```bash
 apt-get update
-apt-get install -y python3.14 tesseract-ocr tesseract-ocr-jpn
+apt-get install -y python3.14
 ```
 
 ### libefiling パッケージのインストール
@@ -33,112 +32,30 @@ pip install libefiling
 
 ## 使い方
 ```python
-from libefiling import parse_archive, ImageConvertParam, Source
+from libefiling import parse_archive, Source
 
-params = [
-    ImageConvertParam(
-        width=300,
-        height=300,
-        suffix="-thumbnail",
-        format=".webp",
-        attributes=[{"key": "sizeTag", "value": "thumbnail"}],
-    ),
-    ImageConvertParam(
-        width=600,
-        height=600,
-        suffix="-middle",
-        format=".webp",
-        attributes=[{"key": "sizeTag", "value": "middle"}],
-    ),
-    ImageConvertParam(
-        width=800,
-        height=0,
-        suffix="-large",
-        format=".webp",
-        attributes=[{"key": "sizeTag", "value": "large"}],
-    ),
-]
-
-SRC='202501010000123456_A163_____XXXXXXXXXX__99999999999_____AAA.JWX'
-PROC='202501010000123456_A163_____XXXXXXXXXX__99999999999_____AFM.XML'
-OUT='output'
-
-### ocr 処理対象イメージの種類. 以下から選択
-### OCR_TARGET = Literal[
-###     "chemical-formulas", "figures", "equations", "tables", "other-images", "ALL"
-### ]
-ocr_target = ["other-images"]
+SRC = "202501010000123456_A163_____XXXXXXXXXX__99999999999_____AAA.JWX"
+PROC = "202501010000123456_A163_____XXXXXXXXXX__99999999999_____AFM.XML"
+OUT = "output"
 
 # src のハッシュ値や文書コードを生成して、処理するか判定する例
 source = Source.create(SRC)
 document_code = source.get_document_code()
-if document_code not in ['A163', 'A151']:
+if document_code not in ["A163", "A151"]:
     raise ValueError(f"Unsupported document code: {document_code}")
-if source.sha256 == '...'
+if source.sha256 == "...":
     print("Already processed")
 else:
-  parse_archive(
-    SRC,
-    PROC,
-    OUT,
-    params,
-    ocr_target,
-    image_max_workers=0,  # 0: CPU数に応じて自動
-  )
-
-
+    parse_archive(SRC, PROC, OUT)
 ```
  - generate_sha256 はアーカイブの内容に応じたハッシュ値を生成し、再処理判定用に使える。
- - parse_archive は SRC,PROCを OUTに展開する。第4引数に、画像変換のパラメータを渡せる。
-OUT に各種ファイルが展開される。第5引数はOCR処理対象の画像種別を選択する。第6引数 image_max_workers は画像処理の並列オプション。
-  - image_max_workers が None のとき: 従来どおりシリアル実行
-  - image_max_workers が 1 のとき: シリアル実行
-  - image_max_workers が 2 以上のとき: スレッド並列実行
-  - image_max_workers が 0 のとき: CPU数ベースで自動設定
-  - source = Source.create(SRC) の source は、manifest.json, xml/sources.xml の内容とおなじ。parse_archive するまえに、source.sha256 を得られるということ。
-
-### 画像変換の高速化オプション
-既定では Pillow でリサイズします。環境変数 LIBEFILING_RESIZER_BACKEND を指定すると、
-cykooz_resizer が利用可能な環境ではそちらを使い、利用できなければ Pillow に自動フォールバックします。
-
-```bash
-# 既定(明示): Pillow
-export LIBEFILING_RESIZER_BACKEND=pillow
-
-# cykooz_resizer を優先(未導入/失敗時は Pillow にフォールバック)
-export LIBEFILING_RESIZER_BACKEND=cykooz
-
-# 既定(明示): Pillow-simd
-export LIBEFILING_RESIZER_BACKEND=pillow-simd
-
-
-# auto も同様に cykooz_resizer, pillow-simd の順に優先
-export LIBEFILING_RESIZER_BACKEND=auto
-```
-
-cykooz_resizer を使う場合:
-
-```bash
-pip install cykooz_resizer
-```
-
-pillow-simd を使う場合:
-
-```bash
-pip install pillow-simd
-```
-
-注: cykooz_resizer は Rust ツールチェーンが必要です。環境によってはビルドできない場合があります。
-pillow-simd は [prerequistes](https://pillow.readthedocs.io/en/stable/installation/building-from-source.html#building-from-source) が必要です。
-
-手元で試した限りでは、pillow, pillow-simd, cykooz_resizer であまり差が出なかった。
+ - parse_archive は SRC, PROC を OUT に展開する。
+ - source = Source.create(SRC) の source は、manifest.json の sources フィールドと同じ形式。parse_archive するまえに、source.sha256 を得られるということ。
 
 #### 出力ファイル
  - manifest.json : 展開後のファイルの情報
- - raw/ : SRC に含まれてたファイルが展展されてる。
- - xml/ : raw/*.xml 、PROC を文字コード変換したxml, イメージ変換の対応を表したxml が保存されてる。
- - images/ : raw の画像ファイルがparamsに従って変換された画像が保存されてる。
- - ocr/ : raw の画像ファイルごとにOCR処理してえられたテキストが保存されてる。
+ - raw/ : SRC に含まれてたファイルが展開されてる。
+ - xml/ : raw/*.xml と PROC を文字コード変換した xml が保存されてる。
 
 
 ## 注意事項
@@ -190,3 +107,8 @@ MIT ライセンス
 
 0.2.1
  - xml/images-information.xml をはき出すようにした. manifest.json の images フィールドと同じ内容 + ocr テキストを含んだxml
+
+0.3.0
+ ** API互換性がなくなっています。
+ - 画像変換、OCR、xml/sources.xml、xml/images-information.xml の出力を廃止した。
+ - 出力は manifest.json, xml/, raw/ のみとした。
